@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Voleibol | Doxa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand">Cotizaciones Doxa</div>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <div class="dropdown">
+      <a href="#" id="menuPersonalizacion">Personalización</a>
+      <div class="dropdown-content" id="submenuPersonalizacion">
+        <a href="soccer.html">Soccer</a>
+        <a href="basquetbol.html">Basquetbol</a>
+        <a href="voleibol.html">Voleibol</a>
+      </div>
+    </div>
+    <a href="#">Sucursales</a>
+    <a href="#">Nosotros</a>
+  </nav>
+</header>
+
+<div class="equipos-header">Equipos voleibol</div>
+
+<section class="equipos-container">
+  <div class="equipo-card model-trigger" data-model="infantil">
+    <h3>INFANTIL</h3><img src="img/voleibol-infantil.jpeg" alt="Voleibol Infantil">
+  </div>
+  <div class="equipo-card model-trigger" data-model="dama">
+    <h3>DAMA</h3><img src="img/voleibol-dama.jpeg" alt="Voleibol Dama">
+  </div>
+  <div class="equipo-card model-trigger" data-model="caballero">
+    <h3>CABALLERO</h3><img src="img/voleibol-caballero.jpeg" alt="Voleibol Caballero">
+  </div>
+</section>
+
+<section class="modelos-container">
+
+  <!-- INFANTIL -->
+  <div id="infantil" class="modelos">
+    <h2>Modelos Infantiles</h2>
+    <div class="modelos-grid">
+      <div class="modelo-card" data-conjunto="short" data-deporte="voli">
+        <img src="img/Conjunto voleybol infantil/Short voley unsex frente-Photoroom.png" alt="Short">
+        <h4>Short</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+      <div class="modelo-card" data-conjunto="playera" data-deporte="voli">
+        <img src="img/Conjunto voleybol infantil/Playera hombre voley frente-Photoroom.png" alt="Playera">
+        <h4>Playera</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+      <div class="modelo-card" data-conjunto="playera_short" data-deporte="voli">
+        <img src="img/Conjunto voleybol infantil/Playera y short hombre voley frente-Photoroom.png" alt="Playera con short">
+        <h4>Playera con short</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAMA -->
+  <div id="dama" class="modelos">
+    <h2>Modelos Dama</h2>
+    <div class="modelos-grid">
+      <div class="modelo-card" data-conjunto="short" data-deporte="voli">
+        <img src="img/Connunto voleybol mujer/Short voley unsex frente-Photoroom.png" alt="Short">
+        <h4>Short</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+      <div class="modelo-card" data-conjunto="playera" data-deporte="voli">
+        <img src="img/Connunto voleybol mujer/Gemini_Generated_Image_lw6q7xlw6q7xlw6q-Photoroom.png" alt="Playera">
+        <h4>Playera</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+      <div class="modelo-card" data-conjunto="playera_short" data-deporte="voli">
+        <img src="img/Connunto voleybol mujer/Playera y Short Mujer frente-Photoroom.png" alt="Playera con short">
+        <h4>Playera con short</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CABALLERO -->
+  <div id="caballero" class="modelos">
+    <h2>Modelos Caballero</h2>
+    <div class="modelos-grid">
+      <div class="modelo-card" data-conjunto="short" data-deporte="voli">
+        <img src="img/Conjunto voleybol hombre/Short voley unsex frente-Photoroom.png" alt="Short">
+        <h4>Short</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+      <div class="modelo-card" data-conjunto="playera" data-deporte="voli">
+        <img src="img/Conjunto voleybol hombre/Playera hombre voley frente-Photoroom.png" alt="Playera">
+        <h4>Playera</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+      <div class="modelo-card" data-conjunto="playera_short" data-deporte="voli">
+        <img src="img/Conjunto voleybol hombre/Playera y short hombre voley frente-Photoroom.png" alt="Playera con short">
+        <h4>Playera con short</h4><p class="precio-tag">Ver precio →</p>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- MODAL COTIZADOR -->
+<div id="modalCotizador" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btnCerrarModal">✕</button>
+    <h2 id="modalTitulo">Cotizar</h2>
+    <div class="modal-form">
+      <label>Talla<select id="selTalla"></select></label>
+      <label>Tipo de tela<select id="selTela"></select></label>
+      <label>Tipo de trabajo<select id="selTrabajo"></select></label>
+      <label>Cantidad<input type="number" id="inputCantidad" min="1" value="1"></label>
+    </div>
+    <div id="resultadoPrecio" class="resultado-precio" style="display:none">
+      <span id="precioUnitario"></span><span id="precioTotal"></span><small id="precioNota"></small>
+    </div>
+    <div id="precioError" class="precio-error" style="display:none">No se encontró precio para esta combinación.</div>
+    <button class="btn-cotizar" id="btnConsultarPrecio">Consultar precio</button>
+    <a href="personalizar.html" class="btn-personalizar">🎨 Personalizar esta prenda</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-section"><h4>Deportes</h4>
+      <a href="soccer.html">Soccer</a><a href="basquetbol.html">Basquetbol</a><a href="voleibol.html">Voleibol</a>
+    </div>
+    <div class="footer-section"><h4>Términos y condiciones</h4><a href="#">Personalización</a></div>
+    <div class="footer-section"><h4>Sucursales</h4><a href="#">Morelos</a><a href="#">Villada</a><a href="#">Zinacantepec</a></div>
+    <div class="footer-brand"><h3>Doxa</h3>
+      <div class="footer-social">
+        <a href="https://www.instagram.com/doxa.deportes/" target="_blank"><img src="https://img.icons8.com/ios-filled/50/FFFFFF/instagram-new.png"></a>
+        <a href="https://www.facebook.com/dep.DOXA/?locale=es_LA" target="_blank"><img src="https://img.icons8.com/ios-filled/50/FFFFFF/facebook-new.png"></a>
+        <a href="https://www.tiktok.com/@doxa.deportes" target="_blank"><img src="https://img.icons8.com/ios-filled/50/FFFFFF/tiktok.png"></a>
+      </div>
+    </div>
+  </div>
+  <a href="https://wa.me/527224807477" class="whatsapp-btn" target="_blank">
+    <img src="https://img.icons8.com/ios-filled/50/25D366/whatsapp.png" alt="WhatsApp">
+  </a>
+</footer>
+
+<script type="module">
+import { initNavbar, getCatalogo, getPrecio, llenarSelect } from "./doxa.js";
+import { initModelos } from "./modelos.js";
+initNavbar(); initModelos();
+let conjuntoActual="", deporteActual="";
+async function cargarCatalogos() {
+  const [tallas,telas,trabajos] = await Promise.all([getCatalogo("tallas"),getCatalogo("tipos_tela"),getCatalogo("tipos_trabajo")]);
+  llenarSelect(document.getElementById("selTalla"),tallas,"clave","Talla");
+  llenarSelect(document.getElementById("selTela"),telas,"nombre","Tipo de tela");
+  llenarSelect(document.getElementById("selTrabajo"),trabajos,"nombre","Tipo de trabajo");
+}
+cargarCatalogos();
+document.querySelectorAll(".modelo-card").forEach(card=>{
+  card.addEventListener("click",()=>{
+    conjuntoActual=card.dataset.conjunto; deporteActual=card.dataset.deporte;
+    document.getElementById("modalTitulo").textContent=`Cotizar: ${card.querySelector("h4").textContent}`;
+    document.getElementById("resultadoPrecio").style.display="none";
+    document.getElementById("precioError").style.display="none";
+    document.getElementById("modalCotizador").style.display="flex";
+  });
+});
+document.getElementById("btnCerrarModal").onclick=()=>document.getElementById("modalCotizador").style.display="none";
+document.getElementById("modalCotizador").addEventListener("click",e=>{if(e.target.id==="modalCotizador")document.getElementById("modalCotizador").style.display="none";});
+document.getElementById("btnConsultarPrecio").addEventListener("click",async()=>{
+  const talla=document.getElementById("selTalla").value,tela=document.getElementById("selTela").value,
+        trabajo=document.getElementById("selTrabajo").value,cantidad=parseInt(document.getElementById("inputCantidad").value)||1;
+  if(!talla||!tela||!trabajo){alert("Selecciona talla, tela y tipo de trabajo.");return;}
+  const btn=document.getElementById("btnConsultarPrecio");btn.textContent="Consultando...";btn.disabled=true;
+  try{
+    const r=await getPrecio({conjunto:conjuntoActual,talla,tela,trabajo,deporte:deporteActual});
+    if(!r){document.getElementById("precioError").style.display="block";document.getElementById("resultadoPrecio").style.display="none";}
+    else{document.getElementById("precioError").style.display="none";document.getElementById("resultadoPrecio").style.display="block";
+      document.getElementById("precioUnitario").textContent=`Precio unitario: $${r.precio.toFixed(2)}`;
+      document.getElementById("precioTotal").textContent=`Total (${cantidad} pzas): $${(r.precio*cantidad).toFixed(2)}`;
+      document.getElementById("precioNota").textContent=r.nota?`* ${r.nota}`:"";
+    }
+  }catch(e){alert("Error al consultar Firebase.");}
+  finally{btn.textContent="Consultar precio";btn.disabled=false;}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotizaciones Doxa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="navbar">
+    <div class="brand">Cotizaciones Doxa</div>
+    <nav>
+      <a href="index.html">Inicio</a>
+      <div class="dropdown">
+        <a href="#" id="menuPersonalizacion">Personalización</a>
+        <div class="dropdown-content" id="submenuPersonalizacion">
+          <a href="soccer.html">Soccer</a>
+          <a href="basquetbol.html">Basquetbol</a>
+          <a href="voleibol.html">Voleibol</a>
+        </div>
+      </div>
+      <a href="#">Sucursales</a>
+      <a href="#">Nosotros</a>
+    </nav>
+  </header>
+
+  <section class="banner no-text">
+    <div class="banner-imgs">
+      <img src="img/Logo.png" alt="Uniformes Doxa">
+    </div>
+  </section>
+
+  <h2 class="section-title">Personaliza la camiseta de tu equipo</h2>
+
+  <section class="sports">
+    <a href="soccer.html" class="card-link">
+      <div class="card">
+        <img src="img/soccer.jpeg" alt="Soccer">
+        <div class="card-text">SOCCER</div>
+      </div>
+    </a>
+    <a href="basquetbol.html" class="card-link">
+      <div class="card">
+        <img src="img/basquet.jpeg" alt="Basquetbol">
+        <div class="card-text">BÁSQUETBOL</div>
+      </div>
+    </a>
+    <a href="voleibol.html" class="card-link">
+      <div class="card">
+        <img src="img/voleibol.jpeg" alt="Voleibol">
+        <div class="card-text">VOLEIBOL</div>
+      </div>
+    </a>
+  </section>
+
+  <section class="bottom-banner">
+    <img src="img/varios 1.png" alt="Deportes">
+  </section>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Deportes</h4>
+        <a href="soccer.html">Soccer</a>
+        <a href="basquetbol.html">Basquetbol</a>
+        <a href="voleibol.html">Voleibol</a>
+      </div>
+      <div class="footer-section">
+        <h4>Términos y condiciones</h4>
+        <a href="#">Personalización</a>
+      </div>
+      <div class="footer-section">
+        <h4>Sucursales</h4>
+        <a href="#">Morelos</a>
+        <a href="#">Villada</a>
+        <a href="#">Zinacantepec</a>
+      </div>
+      <div class="footer-brand">
+        <h3>Doxa</h3>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/doxa.deportes/" target="_blank">
+            <img src="https://img.icons8.com/ios-filled/50/FFFFFF/instagram-new.png">
+          </a>
+          <a href="https://www.facebook.com/dep.DOXA/?locale=es_LA" target="_blank">
+            <img src="https://img.icons8.com/ios-filled/50/FFFFFF/facebook-new.png">
+          </a>
+          <a href="https://www.tiktok.com/@doxa.deportes" target="_blank">
+            <img src="https://img.icons8.com/ios-filled/50/FFFFFF/tiktok.png">
+          </a>
+        </div>
+      </div>
+    </div>
+    <a href="https://wa.me/527224807477" class="whatsapp-btn" target="_blank">
+      <img src="https://img.icons8.com/ios-filled/50/25D366/whatsapp.png" alt="WhatsApp">
+    </a>
+  </footer>
+</div>
+
+<script type="module">
+import { initNavbar } from "./doxa.js";
+initNavbar();
+</script>
+</body>
+</html>

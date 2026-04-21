@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Seed Firebase | Doxa</title>
+  <style>
+    body { font-family: monospace; padding: 30px; background: #111; color: #0f0; }
+    h2   { color: #fff; margin-bottom: 16px; }
+    #log { line-height: 1.8; font-size: 13px; }
+    .ok  { color: #4caf50; }
+    .err { color: #f44336; }
+    button {
+      padding: 12px 28px; font-size: 15px; cursor: pointer;
+      background: #1565c0; color: #fff; border: none;
+      border-radius: 6px; margin-bottom: 20px;
+    }
+    button:disabled { background: #555; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<h2>🔥 Cargar datos a Firebase Firestore</h2>
+<p style="color:#aaa; margin-bottom:16px;">
+  Abre este archivo en un servidor local (Live Server / npx serve).
+  Primero configura tu <code>firebase.js</code> con tus credenciales reales.
+</p>
+<button id="btnSeed" onclick="seedFirebase()">Iniciar carga</button>
+<div id="log"></div>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  collection, doc, setDoc, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const log = (msg, type="ok") => {
+  document.getElementById("log").innerHTML +=
+    `<div class="${type}">${msg}</div>`;
+};
+
+// ── Datos maestros ────────────────────────────────────────────
+const CONJUNTOS = [
+  { id:"short",                  nombre:"SHORT" },
+  { id:"playera",                nombre:"PLAYERA" },
+  { id:"playera_short",          nombre:"PLAYERA Y SHORT" },
+  { id:"playera_short_calceta",  nombre:"PLAYERA, SHORT Y CALCETA" },
+  { id:"calceta",                nombre:"CALCETA" },
+];
+
+const TALLAS = [
+  { id:"S",  clave:"S",  descripcion:"Chico" },
+  { id:"M",  clave:"M",  descripcion:"Mediano" },
+  { id:"G",  clave:"G",  descripcion:"Grande" },
+  { id:"XG", clave:"XG", descripcion:"Extra Grande" },
+];
+
+const TELAS = [
+  { id:"maiky_plus", nombre:"MAIKY PLUS", descripcion:"Tela deportiva de alto rendimiento, transpirable" },
+  { id:"jersey",     nombre:"JERSEY",     descripcion:"Tela de punto, suave y flexible" },
+  { id:"dry_fit",    nombre:"DRY FIT",    descripcion:"Tela técnica de secado rápido" },
+  { id:"lycra",      nombre:"LYCRA",      descripcion:"Tela elástica de compresión" },
+];
+
+const TRABAJOS = [
+  { id:"confeccionado", nombre:"CONFECCIONADO (LISO)", descripcion:"Prenda lisa sin estampado, solo costura" },
+  { id:"sublimado",     nombre:"SUBLIMADO",            descripcion:"Estampado por sublimación, colores permanentes" },
+  { id:"ploter",        nombre:"PLÓTER",               descripcion:"Estampado con vinil de corte (plóter)" },
+  { id:"bordado",       nombre:"BORDADO",              descripcion:"Diseño bordado directamente en la tela" },
+];
+
+const DEPORTES = [
+  { id:"soccer",    nombre:"SOCCER",    descripcion:"Fútbol soccer" },
+  { id:"basquet",   nombre:"BASQUET",   descripcion:"Básquetbol" },
+  { id:"voli",      nombre:"VOLI",      descripcion:"Voleibol" },
+  { id:"atletismo", nombre:"ATLETISMO", descripcion:"Atletismo y pista" },
+  { id:"beisbol",   nombre:"BEISBOL",   descripcion:"Béisbol" },
+];
+
+// ── Precios (conjunto_id, talla, tela_id, trabajo_id, deporte_id, precio, nota)
+const PRECIOS_RAW = [
+  // SOCCER
+  ["calceta",                 "maiky_plus","confeccionado","soccer", 90,  "manga larga +$30"],
+  ["calceta",                 "maiky_plus","ploter",       "soccer", 150, null],
+  ["short",                   "maiky_plus","confeccionado","soccer", 80,  null],
+  ["short",                   "maiky_plus","sublimado",    "soccer", 150, null],
+  ["short",                   "maiky_plus","ploter",       "soccer", 230, null],
+  ["playera",                 "maiky_plus","confeccionado","soccer", 150, null],
+  ["playera",                 "maiky_plus","sublimado",    "soccer", 290, null],
+  ["playera",                 "maiky_plus","ploter",       "soccer", 430, null],
+  ["playera_short",           "maiky_plus","confeccionado","soccer", 310, null],
+  ["playera_short",           "maiky_plus","sublimado",    "soccer", 470, null],
+  ["playera_short",           "maiky_plus","ploter",       "soccer", 680, null],
+  ["playera_short_calceta",   "maiky_plus","confeccionado","soccer", 320, null],
+  ["playera_short_calceta",   "maiky_plus","sublimado",    "soccer", 560, null],
+  ["playera_short_calceta",   "maiky_plus","ploter",       "soccer", 770, null],
+  // BASQUET
+  ["short",                   "maiky_plus","confeccionado","basquet",  80, null],
+  ["short",                   "maiky_plus","sublimado",    "basquet", 150, null],
+  ["short",                   "maiky_plus","ploter",       "basquet", 230, null],
+  ["playera",                 "maiky_plus","confeccionado","basquet", 219, null],
+  ["playera",                 "maiky_plus","sublimado",    "basquet", 309, null],
+  ["playera",                 "maiky_plus","ploter",       "basquet", 489, null],
+  ["playera_short",           "maiky_plus","confeccionado","basquet", 310, null],
+  ["playera_short",           "maiky_plus","sublimado",    "basquet", 470, null],
+  ["playera_short",           "maiky_plus","ploter",       "basquet", 680, null],
+  // VOLI
+  ["short",                   "maiky_plus","confeccionado","voli",  80, null],
+  ["short",                   "maiky_plus","sublimado",    "voli", 150, null],
+  ["short",                   "maiky_plus","ploter",       "voli", 230, null],
+  ["playera",                 "maiky_plus","confeccionado","voli", 150, null],
+  ["playera",                 "maiky_plus","sublimado",    "voli", 290, null],
+  ["playera",                 "maiky_plus","ploter",       "voli", 430, null],
+  ["playera_short",           "maiky_plus","confeccionado","voli", 310, null],
+  ["playera_short",           "maiky_plus","sublimado",    "voli", 470, null],
+  ["playera_short",           "maiky_plus","ploter",       "voli", 680, null],
+];
+
+window.seedFirebase = async function() {
+  const btn = document.getElementById("btnSeed");
+  btn.disabled = true;
+  log("🚀 Iniciando carga...");
+
+  try {
+    // ── Colecciones maestras ──────────────────────────────────
+    const maestras = [
+      ["tipos_conjunto", CONJUNTOS],
+      ["tallas",         TALLAS],
+      ["tipos_tela",     TELAS],
+      ["tipos_trabajo",  TRABAJOS],
+      ["tipos_deporte",  DEPORTES],
+    ];
+
+    for (const [colName, items] of maestras) {
+      const batch = writeBatch(db);
+      items.forEach(item => {
+        batch.set(doc(db, colName, item.id), item);
+      });
+      await batch.commit();
+      log(`✅ ${colName}: ${items.length} documentos`);
+    }
+
+    // ── Precios ───────────────────────────────────────────────
+    // Cada combinación es un doc; las tallas S/M/G/XG se guardan
+    // como el mismo precio (precio es igual para todas las tallas)
+    let count = 0;
+    const TALLA_IDS = ["S","M","G","XG"];
+
+    // Firestore tiene límite de 500 ops por batch
+    let batch = writeBatch(db);
+    let ops   = 0;
+
+    for (const [conjunto, tela, trabajo, deporte, precio, nota] of PRECIOS_RAW) {
+      for (const talla of TALLA_IDS) {
+        const docId = `${conjunto}_${talla}_${tela}_${trabajo}_${deporte}`;
+        const ref   = doc(db, "precios", docId);
+        batch.set(ref, {
+          conjunto_id: conjunto,
+          talla,
+          tela_id:    tela,
+          trabajo_id: trabajo,
+          deporte_id: deporte,
+          precio,
+          nota: nota || null
+        });
+        ops++; count++;
+        if (ops === 490) {
+          await batch.commit();
+          log(`  ⏳ Lote parcial (${count} precios)...`);
+          batch = writeBatch(db);
+          ops   = 0;
+        }
+      }
+    }
+    if (ops > 0) await batch.commit();
+
+    log(`✅ precios: ${count} documentos`);
+    log("🎉 ¡Carga completada! Ya puedes usar el proyecto.", "ok");
+
+  } catch (err) {
+    log(`❌ Error: ${err.message}`, "err");
+    console.error(err);
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
