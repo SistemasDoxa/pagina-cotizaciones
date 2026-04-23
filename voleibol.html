@@ -105,17 +105,15 @@
     <button class="modal-close" id="btnCerrarModal">✕</button>
     <h2 id="modalTitulo">Cotizar</h2>
     <div class="modal-form">
-      <label>Talla<select id="selTalla"></select></label>
       <label>Tipo de tela<select id="selTela"></select></label>
       <label>Tipo de trabajo<select id="selTrabajo"></select></label>
-      <label>Cantidad<input type="number" id="inputCantidad" min="1" value="1"></label>
     </div>
     <div id="resultadoPrecio" class="resultado-precio" style="display:none">
-      <span id="precioUnitario"></span><span id="precioTotal"></span><small id="precioNota"></small>
+      <span id="precioUnitario"></span><small id="precioNota"></small>
     </div>
     <div id="precioError" class="precio-error" style="display:none">No se encontró precio para esta combinación.</div>
     <button class="btn-cotizar" id="btnConsultarPrecio">Consultar precio</button>
-    <a href="personalizar.html" class="btn-personalizar">🎨 Personalizar esta prenda</a>
+    <button class="btn-personalizar" id="btnPersonalizar">🎨 Personalizar esta prenda</button>
   </div>
 </div>
 
@@ -143,41 +141,103 @@
 <script type="module">
 import { initNavbar, getCatalogo, getPrecio, llenarSelect } from "./doxa.js";
 import { initModelos } from "./modelos.js";
-initNavbar(); initModelos();
-let conjuntoActual="", deporteActual="";
+
+initNavbar();
+initModelos();
+
+// ── Cargar catálogos en el modal ──────────────────────────────
+let catalogos = {};
+
 async function cargarCatalogos() {
-  const [tallas,telas,trabajos] = await Promise.all([getCatalogo("tallas"),getCatalogo("tipos_tela"),getCatalogo("tipos_trabajo")]);
-  llenarSelect(document.getElementById("selTalla"),tallas,"clave","Talla");
-  llenarSelect(document.getElementById("selTela"),telas,"nombre","Tipo de tela");
-  llenarSelect(document.getElementById("selTrabajo"),trabajos,"nombre","Tipo de trabajo");
+  const [telas, trabajos] = await Promise.all([
+    getCatalogo("tipos_tela"),
+    getCatalogo("tipos_trabajo"),
+  ]);
+  llenarSelect(document.getElementById("selTela"),    telas,    "nombre", "Tipo de tela");
+  llenarSelect(document.getElementById("selTrabajo"), trabajos, "nombre", "Tipo de trabajo");
 }
 cargarCatalogos();
-document.querySelectorAll(".modelo-card").forEach(card=>{
-  card.addEventListener("click",()=>{
-    conjuntoActual=card.dataset.conjunto; deporteActual=card.dataset.deporte;
-    document.getElementById("modalTitulo").textContent=`Cotizar: ${card.querySelector("h4").textContent}`;
-    document.getElementById("resultadoPrecio").style.display="none";
-    document.getElementById("precioError").style.display="none";
-    document.getElementById("modalCotizador").style.display="flex";
+
+// ── Abrir modal al hacer clic en una modelo-card ──────────────
+let conjuntoActual = "";
+let deporteActual  = "";
+
+document.querySelectorAll(".modelo-card").forEach(card => {
+  card.addEventListener("click", () => {
+    conjuntoActual = card.dataset.conjunto;
+    deporteActual  = card.dataset.deporte;
+    const nombre   = card.querySelector("h4").textContent;
+    document.getElementById("modalTitulo").textContent = `Cotizar: ${nombre}`;
+    document.getElementById("resultadoPrecio").style.display = "none";
+    document.getElementById("precioError").style.display     = "none";
+    document.getElementById("modalCotizador").style.display  = "flex";
   });
 });
-document.getElementById("btnCerrarModal").onclick=()=>document.getElementById("modalCotizador").style.display="none";
-document.getElementById("modalCotizador").addEventListener("click",e=>{if(e.target.id==="modalCotizador")document.getElementById("modalCotizador").style.display="none";});
-document.getElementById("btnConsultarPrecio").addEventListener("click",async()=>{
-  const talla=document.getElementById("selTalla").value,tela=document.getElementById("selTela").value,
-        trabajo=document.getElementById("selTrabajo").value,cantidad=parseInt(document.getElementById("inputCantidad").value)||1;
-  if(!talla||!tela||!trabajo){alert("Selecciona talla, tela y tipo de trabajo.");return;}
-  const btn=document.getElementById("btnConsultarPrecio");btn.textContent="Consultando...";btn.disabled=true;
-  try{
-    const r=await getPrecio({conjunto:conjuntoActual,talla,tela,trabajo,deporte:deporteActual});
-    if(!r){document.getElementById("precioError").style.display="block";document.getElementById("resultadoPrecio").style.display="none";}
-    else{document.getElementById("precioError").style.display="none";document.getElementById("resultadoPrecio").style.display="block";
-      document.getElementById("precioUnitario").textContent=`Precio unitario: $${r.precio.toFixed(2)}`;
-      document.getElementById("precioTotal").textContent=`Total (${cantidad} pzas): $${(r.precio*cantidad).toFixed(2)}`;
-      document.getElementById("precioNota").textContent=r.nota?`* ${r.nota}`:"";
+
+document.getElementById("btnCerrarModal").onclick = () => {
+  document.getElementById("modalCotizador").style.display = "none";
+};
+document.getElementById("modalCotizador").addEventListener("click", e => {
+  if (e.target.id === "modalCotizador")
+    document.getElementById("modalCotizador").style.display = "none";
+});
+
+// ── Consultar precio ──────────────────────────────────────────
+document.getElementById("btnConsultarPrecio").addEventListener("click", async () => {
+  const tela    = document.getElementById("selTela").value;
+  const trabajo = document.getElementById("selTrabajo").value;
+
+  if (!tela || !trabajo) {
+    alert("Selecciona el tipo de tela y el tipo de trabajo."); return;
+  }
+
+  const btn = document.getElementById("btnConsultarPrecio");
+  btn.textContent = "Consultando...";
+  btn.disabled    = true;
+
+  try {
+    const resultado = await getPrecio({
+      conjunto: conjuntoActual,
+      talla: "M", tela, trabajo,
+      deporte: deporteActual
+    });
+
+    const errEl  = document.getElementById("precioError");
+    const resEl  = document.getElementById("resultadoPrecio");
+
+    if (!resultado) {
+      errEl.style.display = "block";
+      resEl.style.display = "none";
+    } else {
+      errEl.style.display = "none";
+      resEl.style.display = "block";
+      document.getElementById("precioUnitario").textContent =
+        `Precio por pieza: $${resultado.precio.toFixed(2)}`;
+      document.getElementById("precioNota").textContent =
+        resultado.nota ? `* ${resultado.nota}` : "";
+      // Guardar datos del conjunto en sessionStorage para personalizar.html
+      const nombreConjunto = document.getElementById("modalTitulo").textContent.replace("Cotizar: ", "");
+      sessionStorage.setItem("doxa_conjunto", JSON.stringify({
+        conjunto:  conjuntoActual,
+        deporte:   deporteActual,
+        nombre:    nombreConjunto,
+        precio:    resultado.precio,
+        tela:      document.getElementById("selTela").options[document.getElementById("selTela").selectedIndex].text,
+        trabajo:   document.getElementById("selTrabajo").options[document.getElementById("selTrabajo").selectedIndex].text,
+        nota:      resultado.nota || ""
+      }));
     }
-  }catch(e){alert("Error al consultar Firebase.");}
-  finally{btn.textContent="Consultar precio";btn.disabled=false;}
+  } catch (err) {
+    console.error(err);
+    alert("Error al consultar. Revisa tu conexión a Firebase.");
+  } finally {
+    btn.textContent = "Consultar precio";
+    btn.disabled    = false;
+  }
+});
+// Redirigir a personalizar con datos guardados
+document.getElementById("btnPersonalizar").addEventListener("click", () => {
+  window.location.href = "personalizar.html";
 });
 </script>
 </body>

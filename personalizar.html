@@ -65,19 +65,6 @@
 
     <!-- TAB: DISEÑO -->
     <div class="panel-content tab-panel active" id="tab-diseno">
-      <h3>Agregar Texto</h3>
-      <input type="text" id="textoInput" placeholder="Escribe texto aquí">
-      <div id="colorTextoRow">
-        <label>Color del texto:</label>
-        <input type="color" id="colorTextoPicker" value="#ffffff">
-      </div>
-      <br>
-      <button class="add-btn" onclick="activarModoTexto()">Agregar texto</button>
-      <small class="help-text">Haz clic sobre la prenda para posicionarlo</small>
-
-      <h3>Agregar Logo / Imagen</h3>
-      <input type="file" id="logoInput" accept="image/*">
-      <small class="help-text">Haz clic sobre la prenda para posicionarlo</small>
     </div>
 
     <!-- TAB: COLORES -->
@@ -107,15 +94,30 @@
 
     <!-- TAB: TEXTO -->
     <div class="panel-content tab-panel" id="tab-texto">
-      <h3>Agregar Texto</h3>
-      <input type="text" id="textoInput2" placeholder="Escribe texto aquí">
+
+      <h3>Agregar Texto <span id="estadoTexto" class="estado-badge disponible">&#9679; Disponible</span></h3>
+      <input type="text" id="textoInput2" placeholder="Max. 10 caracteres" maxlength="10">
+      <small class="char-counter"><span id="charCount">0</span>/10 caracteres</small>
       <div id="colorTextoRow2">
         <label>Color del texto:</label>
         <input type="color" id="colorTextoPicker2" value="#ffffff">
       </div>
       <br>
-      <button class="add-btn" onclick="activarModoTexto2()">Agregar texto</button>
+      <button class="add-btn" id="btnAgregarTexto" onclick="activarModoTexto2()">Agregar texto</button>
       <small class="help-text">Haz clic sobre la prenda para posicionarlo</small>
+
+      <hr style="margin: 18px 0; border-color: #bbb;">
+
+      <h3>Agregar Numero <span id="estadoNumero" class="estado-badge disponible">&#9679; Disponible</span></h3>
+      <input type="text" id="numeroInput" placeholder="Max. 2 digitos" maxlength="2" pattern="[0-9]*" inputmode="numeric">
+      <div id="colorNumeroRow">
+        <label>Color del numero:</label>
+        <input type="color" id="colorNumeroPicker" value="#ffffff">
+      </div>
+      <br>
+      <button class="add-btn" id="btnAgregarNumero" onclick="activarModoNumero()">Agregar numero</button>
+      <small class="help-text">Haz clic sobre la prenda para posicionarlo</small>
+
     </div>
 
     <!-- TAB: LOGO -->
@@ -126,9 +128,15 @@
     </div>
 
     <div class="panel-summary">
-      CANTIDAD: <strong>1</strong> &nbsp;|&nbsp;
-      TALLA: <strong>M</strong> &nbsp;|&nbsp;
-      TOTAL: <strong>$0.00</strong>
+      <div class="summary-conjunto" id="summaryConjunto">
+        <span class="summary-label">Conjunto:</span>
+        <strong id="summaryNombre">—</strong>
+      </div>
+      <div class="summary-precio-row">
+        <span class="summary-label">Precio por pieza:</span>
+        <strong id="summaryPrecio" class="summary-price">—</strong>
+      </div>
+      <button class="btn-siguiente" id="btnSiguiente" onclick="irASiguiente()">Siguiente →</button>
     </div>
   </div>
 </section>
@@ -397,7 +405,15 @@ function onCanvasClick(e) {
 
     if (modoColocar === "texto") {
       const sprite = crearSpriteTexto(pendingData.texto, pendingData.color);
+      sprite.userData.subtipo = pendingData.subtipo || "texto";
       colocarSprite(sprite, hit);
+      if (pendingData.subtipo === "numero") {
+        spriteNumeroColocado = true;
+        actualizarBadge("numero", true);
+      } else {
+        spriteTextoColocado = true;
+        actualizarBadge("texto", true);
+      }
       finalizarModoColocar();
     } else {
       crearSpriteImagen(pendingData.url).then(sprite => {
@@ -510,9 +526,9 @@ function actualizarPosPanel() {
 //  MODO COLOCAR (texto / logo)
 // ─────────────────────────────────────────────────────────────
 function activarModoTexto() {
-  const texto = document.getElementById("textoInput").value.trim();
+  const texto = document.getElementById("textoInput2").value.trim();
   if (!texto) { alert("Escribe un texto primero."); return; }
-  const color = document.getElementById("colorTextoPicker").value;
+  const color = document.getElementById("colorTextoPicker2").value;
   modoColocar  = "texto";
   pendingData  = { texto, color };
   controls.enabled = false;
@@ -564,22 +580,17 @@ document.getElementById("pfSlider").addEventListener("input", () => {
 
 document.getElementById("pfBtnEliminar").addEventListener("click", () => {
   if (!spriteSeleccionado) return;
+  const subtipo = spriteSeleccionado.userData.subtipo;
   scene.remove(spriteSeleccionado);
   sprites = sprites.filter(s => s.mesh !== spriteSeleccionado);
+  if (subtipo === "numero") {
+    spriteNumeroColocado = false;
+    actualizarBadge("numero", false);
+  } else if (subtipo === "texto") {
+    spriteTextoColocado = false;
+    actualizarBadge("texto", false);
+  }
   deseleccionar();
-});
-
-// ─────────────────────────────────────────────────────────────
-//  LOGO INPUT
-// ─────────────────────────────────────────────────────────────
-document.getElementById("logoInput").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  modoColocar = "logo";
-  pendingData = { url: URL.createObjectURL(file) };
-  controls.enabled = false;
-  document.getElementById("threeCanvas").style.cursor = "crosshair";
-  mostrarIndicador("👆 Haz clic en la prenda para posicionar la imagen");
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -633,6 +644,27 @@ window.cambiarPrenda = cambiarPrenda;
 window.activarModoTexto = activarModoTexto;
 
 // ─────────────────────────────────────────────────────────────
+//  CARGAR DATOS DEL CONJUNTO DESDE sessionStorage
+// ─────────────────────────────────────────────────────────────
+(function cargarResumen() {
+  try {
+    const raw = sessionStorage.getItem("doxa_conjunto");
+    console.log("Datos crudos:", raw); // Depuración 1
+    if (!raw) return;
+    const datos = JSON.parse(raw);
+    const elNombre = document.getElementById("summaryNombre");
+    const elPrecio = document.getElementById("summaryPrecio");
+    if (elNombre && datos.nombre) elNombre.textContent = datos.nombre;
+    if (elPrecio && datos.precio) elPrecio.textContent = "$" + parseFloat(datos.precio).toFixed(2);
+  } catch(e) { console.warn("No hay datos de conjunto guardados."); }
+})();
+
+function irASiguiente() {
+  window.location.href = "cotizar.html";
+}
+window.irASiguiente = irASiguiente;
+
+// ─────────────────────────────────────────────────────────────
 //  TABS
 // ─────────────────────────────────────────────────────────────
 document.querySelectorAll(".panel-tabs .tab").forEach(btn => {
@@ -644,18 +676,71 @@ document.querySelectorAll(".panel-tabs .tab").forEach(btn => {
   });
 });
 
-// Tab TEXTO — inputs duplicados apuntan a la misma lógica
+// ─────────────────────────────────────────────────────────────
+//  RASTREO DE UNICIDAD (texto / numero)
+// ─────────────────────────────────────────────────────────────
+let spriteTextoColocado  = false;
+let spriteNumeroColocado = false;
+
+function actualizarBadge(tipo, colocado) {
+  const badge = document.getElementById(tipo === "texto" ? "estadoTexto" : "estadoNumero");
+  const btn   = document.getElementById(tipo === "texto" ? "btnAgregarTexto" : "btnAgregarNumero");
+  if (!badge || !btn) return;
+  if (colocado) {
+    badge.textContent = "\u25CF En uso";
+    badge.className = "estado-badge en-uso";
+    btn.disabled = true;
+    btn.style.opacity = "0.45";
+    btn.style.cursor  = "not-allowed";
+  } else {
+    badge.textContent = "\u25CF Disponible";
+    badge.className = "estado-badge disponible";
+    btn.disabled = false;
+    btn.style.opacity = "";
+    btn.style.cursor  = "";
+  }
+}
+
+// Tab TEXTO
 function activarModoTexto2() {
+  if (spriteTextoColocado) { alert("Ya hay un texto en la prenda. Eliminalo primero."); return; }
   const texto = document.getElementById("textoInput2").value.trim();
   if (!texto) { alert("Escribe un texto primero."); return; }
   const color = document.getElementById("colorTextoPicker2").value;
   modoColocar = "texto";
-  pendingData = { texto, color };
+  pendingData = { texto, color, subtipo: "texto" };
   controls.enabled = false;
   document.getElementById("threeCanvas").style.cursor = "crosshair";
-  mostrarIndicador("👆 Haz clic en la prenda para posicionar el texto");
+  mostrarIndicador("\u{1F446} Haz clic en la prenda para posicionar el texto");
 }
 window.activarModoTexto2 = activarModoTexto2;
+
+// Tab NUMERO
+function activarModoNumero() {
+  if (spriteNumeroColocado) { alert("Ya hay un numero en la prenda. Eliminalo primero."); return; }
+  const num = document.getElementById("numeroInput").value.trim();
+  if (!num) { alert("Escribe un numero primero."); return; }
+  if (!/^\d{1,2}$/.test(num)) { alert("Solo se permiten 1 o 2 digitos numericos."); return; }
+  const color = document.getElementById("colorNumeroPicker").value;
+  modoColocar = "texto";
+  pendingData = { texto: num, color, subtipo: "numero" };
+  controls.enabled = false;
+  document.getElementById("threeCanvas").style.cursor = "crosshair";
+  mostrarIndicador("\u{1F446} Haz clic en la prenda para posicionar el numero");
+}
+window.activarModoNumero = activarModoNumero;
+
+// Contador de caracteres
+document.getElementById("textoInput2").addEventListener("input", () => {
+  const len = document.getElementById("textoInput2").value.length;
+  document.getElementById("charCount").textContent = len;
+});
+
+// Filtrar solo digitos en el campo numero
+document.getElementById("numeroInput").addEventListener("input", () => {
+  const el = document.getElementById("numeroInput");
+  el.value = el.value.replace(/\D/g, "").slice(0, 2);
+});
 
 // Tab LOGO — input duplicado
 document.getElementById("logoInput2").addEventListener("change", (e) => {

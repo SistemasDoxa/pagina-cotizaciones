@@ -539,6 +539,15 @@ body {
 
 /* CONTENIDO PANEL */
 
+/* Ocultar todos los tabs por defecto, mostrar solo el activo */
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
 .panel-content {
   flex: 1;
   padding: 20px;
@@ -922,6 +931,10 @@ model-viewer{
 
 .panel-tabs .active { background: #000; color: #fff; }
 
+/* Ocultar tabs inactivos */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
 .panel-content {
   flex: 1;
   padding: 18px;
@@ -1021,6 +1034,33 @@ model-viewer{
   margin-top: 3px;
   color: #888;
   font-size: 11px;
+}
+
+/* Estado badge unicidad */
+.estado-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.estado-badge.disponible {
+  background: #e0f7e9;
+  color: #2e7d32;
+}
+.estado-badge.en-uso {
+  background: #fdecea;
+  color: #c62828;
+}
+
+/* Contador de caracteres */
+.char-counter {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 6px;
+  margin-top: 2px;
 }
 
 /* =========================
@@ -1181,5 +1221,389 @@ model-viewer{
   text-align: center;
   text-decoration: none;
   transition: background 0.2s;
+}
+.btn-personalizar:hover { background: #e53935; }
+
+/* =========================
+   PANEL SUMMARY — PERSONALIZAR
+========================= */
+
+.panel-summary {
+  background: #fff;
+  padding: 14px 16px;
+  border-top: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-conjunto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #555;
+}
+
+.summary-precio-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #555;
+}
+
+.summary-label { color: #888; }
+
+.summary-price {
+  color: #c62828;
+  font-size: 15px;
+}
+
+.btn-siguiente {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-siguiente:hover { background: #e53935; }
+
+/* =========================
+   COTIZAR — PASOS
+========================= */
+
+.cotizar-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 22px 40px;
+  background: #fff;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.step {
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #aaa;
+  background: #f0f0f0;
+  white-space: nowrap;
+}
+
+.step.active {
+  background: #0b2a4a;
+  color: #fff;
+}
+
+.step.done {
+  background: #e0f7e9;
+  color: #2e7d32;
+}
+
+.step-sep {
+  width: 40px;
+  height: 2px;
+  background: #ddd;
+}
+
+/* =========================
+   COTIZAR — RESUMEN
+========================= */
+
+.cotizar-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  background: #f7f7f7;
+  border-bottom: 1px solid #e6e6e6;
+  padding: 14px 40px;
+}
+
+.resumen-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.resumen-etiqueta { color: #888; }
+
+.resumen-precio {
+  color: #c62828;
+  font-size: 15px;
+}
+
+/* =========================
+   COTIZAR — SECCIÓN GENERAL
+========================= */
+
+.cotizar-section {
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 0 20px 60px;
+}
+
+.cotizar-titulo {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0b2a4a;
+  margin-bottom: 8px;
+}
+
+.cotizar-desc {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+/* =========================
+   COTIZAR — TALLAS
+========================= */
+
+.tallas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 500px) {
+  .tallas-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.talla-card {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 18px 12px;
+  text-align: center;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.talla-card:has(.talla-input[value]:not([value="0"])) {
+  border-color: #0b2a4a;
+  box-shadow: 0 0 0 3px rgba(11,42,74,.1);
+}
+
+.talla-nombre {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0b2a4a;
+  margin-bottom: 12px;
+}
+
+.talla-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.talla-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #0b2a4a;
+  background: #fff;
+  color: #0b2a4a;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: background .15s, color .15s;
+}
+
+.talla-btn:hover { background: #0b2a4a; color: #fff; }
+
+.talla-input {
+  width: 44px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: #111;
+  -moz-appearance: textfield;
+}
+.talla-input::-webkit-outer-spin-button,
+.talla-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.tallas-total-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 14px;
+  color: #444;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 16px;
+  margin-bottom: 28px;
+}
+
+.tallas-total-row strong { color: #0b2a4a; font-size: 16px; }
+
+/* =========================
+   COTIZAR — CONTACTO
+========================= */
+
+.contacto-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 11px 14px;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fafafa;
+  transition: border-color .2s;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #0b2a4a;
+  background: #fff;
+}
+
+.req { color: #c62828; }
+.opcional { color: #aaa; font-weight: 400; text-transform: none; font-size: 11px; }
+
+/* =========================
+   COTIZAR — ACCIONES
+========================= */
+
+.cotizar-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.btn-back {
+  padding: 11px 24px;
+  background: #fff;
+  border: 2px solid #0b2a4a;
+  color: #0b2a4a;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.btn-back:hover { background: #0b2a4a; color: #fff; }
+
+.btn-next {
+  padding: 11px 28px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-next:hover { background: #e53935; }
+.btn-next:disabled { background: #aaa; cursor: not-allowed; }
+
+/* =========================
+   COTIZAR — CONFIRMACIÓN
+========================= */
+
+.listo-box {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.listo-icon {
+  font-size: 60px;
+  margin-bottom: 16px;
+}
+
+.listo-box h2 {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0b2a4a;
+  margin-bottom: 12px;
+}
+
+.listo-box p {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.listo-resumen {
+  margin: 28px auto 0;
+  max-width: 500px;
+  text-align: left;
+}
+
+.listo-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.listo-tabla th,
+.listo-tabla td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.listo-tabla th {
+  color: #888;
+  font-weight: 600;
+  width: 42%;
+}
+
+.listo-tabla td { color: #111; }
+
+/* BTN personalizar como button */
+.btn-personalizar {
+  display: inline-block;
+  width: 100%;
+  padding: 11px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: background .2s;
+  cursor: pointer;
 }
 .btn-personalizar:hover { background: #e53935; }

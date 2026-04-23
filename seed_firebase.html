@@ -43,7 +43,6 @@ const CONJUNTOS = [
   { id:"playera",                nombre:"PLAYERA" },
   { id:"playera_short",          nombre:"PLAYERA Y SHORT" },
   { id:"playera_short_calceta",  nombre:"PLAYERA, SHORT Y CALCETA" },
-  { id:"calceta",                nombre:"CALCETA" },
 ];
 
 const TALLAS = [
@@ -55,32 +54,25 @@ const TALLAS = [
 
 const TELAS = [
   { id:"maiky_plus", nombre:"MAIKY PLUS", descripcion:"Tela deportiva de alto rendimiento, transpirable" },
-  { id:"jersey",     nombre:"JERSEY",     descripcion:"Tela de punto, suave y flexible" },
-  { id:"dry_fit",    nombre:"DRY FIT",    descripcion:"Tela técnica de secado rápido" },
-  { id:"lycra",      nombre:"LYCRA",      descripcion:"Tela elástica de compresión" },
+  { id:"maiky",     nombre:"MAIKY",     descripcion:"Tela de punto, suave y flexible" },
 ];
 
 const TRABAJOS = [
   { id:"confeccionado", nombre:"CONFECCIONADO (LISO)", descripcion:"Prenda lisa sin estampado, solo costura" },
   { id:"sublimado",     nombre:"SUBLIMADO",            descripcion:"Estampado por sublimación, colores permanentes" },
   { id:"ploter",        nombre:"PLÓTER",               descripcion:"Estampado con vinil de corte (plóter)" },
-  { id:"bordado",       nombre:"BORDADO",              descripcion:"Diseño bordado directamente en la tela" },
 ];
 
 const DEPORTES = [
   { id:"soccer",    nombre:"SOCCER",    descripcion:"Fútbol soccer" },
   { id:"basquet",   nombre:"BASQUET",   descripcion:"Básquetbol" },
-  { id:"voli",      nombre:"VOLI",      descripcion:"Voleibol" },
-  { id:"atletismo", nombre:"ATLETISMO", descripcion:"Atletismo y pista" },
-  { id:"beisbol",   nombre:"BEISBOL",   descripcion:"Béisbol" },
+  { id:"voli",      nombre:"VOLEIBOL",      descripcion:"Voleibol" },
 ];
 
 // ── Precios (conjunto_id, talla, tela_id, trabajo_id, deporte_id, precio, nota)
 const PRECIOS_RAW = [
   // SOCCER
-  ["calceta",                 "maiky_plus","confeccionado","soccer", 90,  "manga larga +$30"],
-  ["calceta",                 "maiky_plus","ploter",       "soccer", 150, null],
-  ["short",                   "maiky_plus","confeccionado","soccer", 80,  null],
+  ["short",                   "maiky_plus","confeccionado","soccer", 90,  null],
   ["short",                   "maiky_plus","sublimado",    "soccer", 150, null],
   ["short",                   "maiky_plus","ploter",       "soccer", 230, null],
   ["playera",                 "maiky_plus","confeccionado","soccer", 150, null],
@@ -92,6 +84,19 @@ const PRECIOS_RAW = [
   ["playera_short_calceta",   "maiky_plus","confeccionado","soccer", 320, null],
   ["playera_short_calceta",   "maiky_plus","sublimado",    "soccer", 560, null],
   ["playera_short_calceta",   "maiky_plus","ploter",       "soccer", 770, null],
+
+  ["short",                   "maiky","confeccionado","soccer", 90,  null],
+  ["short",                   "maiky","sublimado",    "soccer", 150, null],
+  ["short",                   "maiky","ploter",       "soccer", 230, null],
+  ["playera",                 "maiky","confeccionado","soccer", 150, null],
+  ["playera",                 "maiky","sublimado",    "soccer", 290, null],
+  ["playera",                 "maiky","ploter",       "soccer", 430, null],
+  ["playera_short",           "maiky","confeccionado","soccer", 310, null],
+  ["playera_short",           "maiky","sublimado",    "soccer", 470, null],
+  ["playera_short",           "maiky","ploter",       "soccer", 680, null],
+  ["playera_short_calceta",   "maiky","confeccionado","soccer", 320, null],
+  ["playera_short_calceta",   "maiky","sublimado",    "soccer", 560, null],
+  ["playera_short_calceta",   "maiky","ploter",       "soccer", 770, null],
   // BASQUET
   ["short",                   "maiky_plus","confeccionado","basquet",  80, null],
   ["short",                   "maiky_plus","sublimado",    "basquet", 150, null],
@@ -102,6 +107,16 @@ const PRECIOS_RAW = [
   ["playera_short",           "maiky_plus","confeccionado","basquet", 310, null],
   ["playera_short",           "maiky_plus","sublimado",    "basquet", 470, null],
   ["playera_short",           "maiky_plus","ploter",       "basquet", 680, null],
+
+  ["short",                   "maiky","confeccionado","basquet",  80, null],
+  ["short",                   "maiky","sublimado",    "basquet", 150, null],
+  ["short",                   "maiky","ploter",       "basquet", 230, null],
+  ["playera",                 "maiky","confeccionado","basquet", 219, null],
+  ["playera",                 "maiky","sublimado",    "basquet", 309, null],
+  ["playera",                 "maiky","ploter",       "basquet", 489, null],
+  ["playera_short",           "maiky","confeccionado","basquet", 310, null],
+  ["playera_short",           "maiky","sublimado",    "basquet", 470, null],
+  ["playera_short",           "maiky","ploter",       "basquet", 680, null],
   // VOLI
   ["short",                   "maiky_plus","confeccionado","voli",  80, null],
   ["short",                   "maiky_plus","sublimado",    "voli", 150, null],
@@ -112,6 +127,16 @@ const PRECIOS_RAW = [
   ["playera_short",           "maiky_plus","confeccionado","voli", 310, null],
   ["playera_short",           "maiky_plus","sublimado",    "voli", 470, null],
   ["playera_short",           "maiky_plus","ploter",       "voli", 680, null],
+
+  ["short",                   "maiky","confeccionado","voli",  80, null],
+  ["short",                   "maiky","sublimado",    "voli", 150, null],
+  ["short",                   "maiky","ploter",       "voli", 230, null],
+  ["playera",                 "maiky","confeccionado","voli", 150, null],
+  ["playera",                 "maiky","sublimado",    "voli", 290, null],
+  ["playera",                 "maiky","ploter",       "voli", 430, null],
+  ["playera_short",           "maiky","confeccionado","voli", 310, null],
+  ["playera_short",           "maiky","sublimado",    "voli", 470, null],
+  ["playera_short",           "maiky","ploter",       "voli", 680, null],
 ];
 
 window.seedFirebase = async function() {
