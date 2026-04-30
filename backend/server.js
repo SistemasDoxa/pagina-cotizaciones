@@ -30,11 +30,8 @@ app.use(cors({
 app.use(express.json({ limit: "2mb" }));
 
 // Servir el frontend estático
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
-});
 // ── Helpers ──────────────────────────────────────────────────
 function snap2arr(snapshot) {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
