@@ -113,6 +113,29 @@
   <h2 class="cotizar-titulo">Paso 3 — Tus datos de contacto</h2>
   <p class="cotizar-desc">Completa el formulario y en breve un asesor se pondrá en contacto contigo.</p>
 
+  <!-- LOGO DEL USUARIO (fuera del PDF, solo visual) -->
+  <div id="logoUsuarioWrap" style="display:none; margin-bottom:24px;">
+    <h3 style="font-size:0.92rem; font-weight:700; color:#444; margin-bottom:10px; text-transform:uppercase; letter-spacing:.04em;">Tu logo</h3>
+    <div style="display:inline-block; background:#f7f7f7; border:1.5px solid #ddd; border-radius:10px; padding:12px 18px; text-align:center;">
+      <img id="logoUsuarioImg" src="" alt="Logo subido" style="max-width:160px; max-height:100px; object-fit:contain; display:block; border-radius:4px;">
+      <p style="font-size:0.75rem; color:#888; margin:6px 0 0;">Logo que aparecerá en el PDF</p>
+    </div>
+  </div>
+
+  <!-- PDF DEL DISEÑO (solo lectura + descarga) -->
+  <div id="vistasDiseno" style="display:none; margin-bottom:28px;">
+    <h3 style="font-size:0.92rem; font-weight:700; color:#444; margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em;">Vista previa del diseño</h3>
+    <p style="font-size:0.82rem; color:#666; margin-bottom:12px;">El PDF incluye las imágenes de tu prenda con el logo. Solo puede visualizarse o descargarse.</p>
+    <div id="pdfVisorWrap" style="border:1.5px solid #ddd; border-radius:10px; overflow:hidden; background:#f0f0f0; margin-bottom:14px; position:relative; min-height:80px;">
+      <div id="pdfCargando" style="padding:28px; text-align:center; color:#888; font-size:0.88rem;">⏳ Generando vista previa...</div>
+      <iframe id="pdfVisor" src="" style="width:100%; height:520px; border:none; display:none;" title="Vista previa del diseño"></iframe>
+    </div>
+    <button id="btnDescargarPDF" onclick="descargarPDFVistas()"
+      style="background:#c0392b; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-size:0.93rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+      ⬇️ Descargar PDF
+    </button>
+  </div>
+
   <div class="contacto-form">
     <div class="form-group">
       <label for="cNombre">Nombre completo <span class="req">*</span></label>
@@ -192,192 +215,10 @@
   </a>
 </footer>
 
-<script type="module">
-import { db } from "./firebase.js";
-import { collection, addDoc, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { initNavbar } from "./doxa.js";
+<script type="module" src="cotizar.js"></script>
+<!-- jsPDF para generar PDF en el navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-initNavbar();
-
-// ── Cargar datos del conjunto ──────────────────────────────
-let conjuntoDatos = null;
-const raw = sessionStorage.getItem("doxa_conjunto");
-try {
-  if (raw) conjuntoDatos = JSON.parse(raw);
-} catch(e) {}
-
-if (conjuntoDatos) {
-  document.getElementById("resNombre").textContent  = conjuntoDatos.nombre  || "—";
-  document.getElementById("summaryNombre") && (document.getElementById("summaryNombre").textContent = conjuntoDatos.nombre);
-  const precio = parseFloat(conjuntoDatos.precio);
-  if (!isNaN(precio)) {
-    document.getElementById("resPrecio").textContent = "$" + precio.toFixed(2);
-    document.getElementById("resTotalWrap").style.display = "flex";
-  }
-}
-
-// ── Botones +/− tallas ────────────────────────────────────
-const TALLAS = ["S","M","G","XG"];
-
-function recalcular() {
-  let total = 0;
-  TALLAS.forEach(t => {
-    total += parseInt(document.getElementById("t_" + t).value) || 0;
-  });
-  document.getElementById("totalPiezas").textContent = total;
-
-  const precio = conjuntoDatos ? parseFloat(conjuntoDatos.precio) : 0;
-  if (precio > 0 && total > 0) {
-    const totalVal = (precio * total).toFixed(2);
-    document.getElementById("totalPrecioRow").style.display = "flex";
-    document.getElementById("totalPrecioVal").textContent = "$" + totalVal;
-    document.getElementById("resTotal").textContent = "$" + totalVal;
-    document.getElementById("resTotalWrap").style.display = "flex";
-  } else {
-    document.getElementById("totalPrecioRow").style.display = "none";
-    document.getElementById("resTotal").textContent = "—";
-  }
-}
-
-document.querySelectorAll(".talla-btn.plus").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const inp = document.getElementById("t_" + btn.dataset.talla);
-    inp.value = (parseInt(inp.value) || 0) + 1;
-    recalcular();
-  });
-});
-
-document.querySelectorAll(".talla-btn.minus").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const inp = document.getElementById("t_" + btn.dataset.talla);
-    const v = (parseInt(inp.value) || 0) - 1;
-    inp.value = v < 0 ? 0 : v;
-    recalcular();
-  });
-});
-
-// ── Contador textarea nota ─────────────────────────────────
-document.getElementById("cNota").addEventListener("input", () => {
-  document.getElementById("notaCount").textContent =
-    document.getElementById("cNota").value.length;
-});
-
-// ── Ir a contacto ─────────────────────────────────────────
-window.irAContacto = function() {
-  const total = parseInt(document.getElementById("totalPiezas").textContent);
-  if (!total || total < 1) {
-    alert("Agrega al menos 1 pieza para continuar.");
-    return;
-  }
-  document.getElementById("seccionTallas").style.display   = "none";
-  document.getElementById("seccionContacto").style.display = "block";
-  document.getElementById("stepTallas").classList.remove("active");
-  document.getElementById("stepTallas").classList.add("done");
-  document.getElementById("stepContacto").classList.add("active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
-window.regresarATallas = function() {
-  document.getElementById("seccionContacto").style.display = "none";
-  document.getElementById("seccionTallas").style.display   = "block";
-  document.getElementById("stepContacto").classList.remove("active");
-  document.getElementById("stepTallas").classList.remove("done");
-  document.getElementById("stepTallas").classList.add("active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
-// ── Enviar pedido a Firestore ──────────────────────────────
-window.enviarPedido = async function() {
-  const nombre   = document.getElementById("cNombre").value.trim();
-  const email    = document.getElementById("cEmail").value.trim();
-  const telefono = document.getElementById("cTelefono").value.trim();
-  const nota     = document.getElementById("cNota").value.trim();
-
-  if (!nombre)   { alert("Por favor ingresa tu nombre completo."); return; }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert("Por favor ingresa un correo válido."); return;
-  }
-  if (!telefono || !/^\d{10,}$/.test(telefono.replace(/[\s\-\(\)]/g,""))) {
-    alert("Por favor ingresa un teléfono de al menos 10 dígitos."); return;
-  }
-
-  // Armar desglose de tallas
-  const tallas = {};
-  let totalPiezas = 0;
-  TALLAS.forEach(t => {
-    const v = parseInt(document.getElementById("t_" + t).value) || 0;
-    if (v > 0) { tallas[t] = v; totalPiezas += v; }
-  });
-
-  const precio      = conjuntoDatos ? parseFloat(conjuntoDatos.precio) : 0;
-  const totalPrecio = precio * totalPiezas;
-
-  const pedido = {
-    // Datos del conjunto
-    conjunto:     conjuntoDatos?.conjunto   || "",
-    deporte:      conjuntoDatos?.deporte    || "",
-    nombreConjunto: conjuntoDatos?.nombre   || "",
-    tela:         conjuntoDatos?.tela       || "",
-    trabajo:      conjuntoDatos?.trabajo    || "",
-    precioUnitario: precio,
-    // Tallas
-    tallas,
-    totalPiezas,
-    totalPrecio,
-    // Contacto
-    nombre,
-    email,
-    telefono,
-    nota,
-    // Meta
-    estado: "pendiente",
-    creadoEn: serverTimestamp()
-  };
-
-  const btn = document.getElementById("btnEnviar");
-  btn.disabled    = true;
-  btn.textContent = "Enviando...";
-
-  try {
-    await addDoc(collection(db, "pedidos"), pedido);
-
-    // Mostrar confirmación
-    document.getElementById("seccionContacto").style.display = "none";
-    document.getElementById("seccionListo").style.display    = "block";
-    document.getElementById("stepContacto").classList.remove("active");
-    document.getElementById("stepContacto").classList.add("done");
-    document.getElementById("stepListo").classList.add("active");
-
-    document.getElementById("listoNombre").textContent = nombre;
-    document.getElementById("listoEmail").textContent  = email;
-    document.getElementById("listoTel").textContent    = telefono;
-
-    // Resumen del pedido en confirmación
-    let resHtml = `<table class="listo-tabla">
-      <tr><th>Conjunto</th><td>${conjuntoDatos?.nombre || "—"}</td></tr>
-      <tr><th>Tela</th><td>${conjuntoDatos?.tela || "—"}</td></tr>
-      <tr><th>Trabajo</th><td>${conjuntoDatos?.trabajo || "—"}</td></tr>`;
-    Object.entries(tallas).forEach(([t, c]) => {
-      resHtml += `<tr><th>Talla ${t}</th><td>${c} pieza${c>1?"s":""}</td></tr>`;
-    });
-    resHtml += `<tr><th>Total piezas</th><td><strong>${totalPiezas}</strong></td></tr>`;
-    if (precio > 0) resHtml += `<tr><th>Total estimado</th><td><strong>$${totalPrecio.toFixed(2)}</strong></td></tr>`;
-    if (nota) resHtml += `<tr><th>Nota</th><td>${nota}</td></tr>`;
-    resHtml += `</table>`;
-    document.getElementById("listoResumen").innerHTML = resHtml;
-
-    // Limpiar sessionStorage
-    sessionStorage.removeItem("doxa_conjunto");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-
-  } catch(err) {
-    console.error(err);
-    alert("Error al enviar. Verifica tu conexión e intenta de nuevo.");
-    btn.disabled    = false;
-    btn.textContent = "Enviar cotización ✓";
-  }
-};
-</script>
+<script src="cotizar-pdf.js"></script>
 </body>
 </html>

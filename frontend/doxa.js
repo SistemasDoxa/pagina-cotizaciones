@@ -1,11 +1,9 @@
 // ============================================================
-//  doxa.js  — helpers compartidos: navbar, footer, Firebase
+//  doxa.js  — helpers compartidos: navbar, API calls
+//  ✅ Sin credenciales de Firebase. Todo pasa por el backend.
 // ============================================================
 
-import { db } from "./firebase.js";
-import {
-  collection, getDocs, query, where
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const API = "/api";   // relativo al mismo servidor
 
 // ── Navbar dropdown ──────────────────────────────────────────
 export function initNavbar() {
@@ -19,26 +17,34 @@ export function initNavbar() {
   });
 }
 
-// ── Catálogos desde Firestore ────────────────────────────────
+// ── Catálogos desde la API ───────────────────────────────────
 export async function getCatalogo(coleccion) {
-  const snap = await getDocs(collection(db, coleccion));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const res = await fetch(`${API}/catalogo/${encodeURIComponent(coleccion)}`);
+  if (!res.ok) throw new Error(`Error al cargar catálogo: ${coleccion}`);
+  return res.json();
 }
 
 // ── Consulta de precio ───────────────────────────────────────
 export async function getPrecio({ conjunto, talla, tela, trabajo, deporte }) {
-  const docId = `${conjunto}_${talla}_${tela}_${trabajo}_${deporte}`;
-  const snap  = await getDocs(
-    query(collection(db, "precios"),
-      where("conjunto_id", "==", conjunto),
-      where("talla",       "==", talla),
-      where("tela_id",     "==", tela),
-      where("trabajo_id",  "==", trabajo),
-      where("deporte_id",  "==", deporte)
-    )
-  );
-  if (snap.empty) return null;
-  return snap.docs[0].data();
+  const res = await fetch(`${API}/precio`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ conjunto, talla, tela, trabajo, deporte }),
+  });
+  if (!res.ok) throw new Error("Error al consultar precio");
+  return res.json();   // null si no existe
+}
+
+// ── Enviar pedido ────────────────────────────────────────────
+export async function enviarPedido(pedido) {
+  const res = await fetch(`${API}/pedidos`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(pedido),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Error al guardar pedido");
+  return data;
 }
 
 // ── Poblar un <select> ───────────────────────────────────────
