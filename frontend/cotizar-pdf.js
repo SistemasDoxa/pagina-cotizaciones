@@ -1,7 +1,14 @@
 // ============================================================
-//  cotizar-pdf.js — generación y descarga del PDF de diseño
-//  Soporta 1 prenda (playera o short) o 2 prendas (conjunto completo)
+//  cotizar-pdf.js — único archivo para generación del PDF de diseño
+//  Carga jsPDF automáticamente si no está disponible
 // ============================================================
+
+(function cargarJsPDF() {
+  if (window.jspdf) return;
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  document.head.appendChild(s);
+})();
 
 // ── Mostrar logo del usuario ──────────────────────────────────
 (function mostrarLogo() {
@@ -47,41 +54,66 @@ function dibujarPiePagina(doc, pageW, pageH, margin) {
 // Dibuja un grid 2x2 con las 4 vistas de una prenda.
 // Devuelve la Y donde termina el grid.
 function dibujarGrid(doc, vistas, subtitulo, startY, pageW, margin) {
-  const ETIQUETAS = ["Frente", "Trasera", "Izquierda", "Derecha"];
+  if (!vistas) {
+    console.warn("No se encontraron vistas para:", subtitulo || "Prenda única");
+    return startY;
+  }
+
+  const ORDEN = ["Frente", "Trasera", "Izquierda", "Derecha"];
+  const LABEL_MAPA = {
+    "Frente":    "FRENTE",
+    "Trasera":   "TRASERA",
+    "Izquierda": "LADO IZQUIERDO",
+    "Derecha":   "LADO DERECHO"
+  };
+
   const colW = (pageW - margin * 2 - 8) / 2;
   const colH = colW * 0.85;
   let y0 = startY;
 
   if (subtitulo) {
-    doc.setFontSize(10);
+    doc.setFillColor(192, 57, 43);
+    doc.rect(margin, y0, 3, 8, "F");
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(192, 57, 43);
-    doc.text(subtitulo.toUpperCase(), margin, y0 + 5);
-    y0 += 9;
+    doc.text(subtitulo.toUpperCase(), margin + 6, y0 + 6.5);
+    y0 += 13;
   }
 
-  ETIQUETAS.forEach(function(nombre, i) {
+  ORDEN.forEach(function(nombre, i) {
     var dataUrl = vistas[nombre];
     if (!dataUrl) return;
+
     var col = i % 2;
     var row = Math.floor(i / 2);
     var x   = margin + col * (colW + 8);
-    var y   = y0 + row * (colH + 14);
+    var y   = y0 + row * (colH + 16);
 
-    doc.setFillColor(246, 246, 246);
-    doc.setDrawColor(218, 218, 218);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(x, y, colW, colH + 8, 2, 2, "FD");
-    doc.setFontSize(8);
+    // Sombra
+    doc.setFillColor(225, 225, 225);
+    doc.roundedRect(x + 1.2, y + 1.2, colW, colH + 10, 2, 2, "F");
+    // Fondo celda
+    doc.setFillColor(252, 252, 252);
+    doc.setDrawColor(210, 210, 210);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(x, y, colW, colH + 10, 2, 2, "FD");
+    // Franja etiqueta roja
+    doc.setFillColor(192, 57, 43);
+    doc.roundedRect(x, y, colW, 8, 2, 2, "F");
+    doc.rect(x, y + 4, colW, 4, "F");
+    // Texto etiqueta
+    doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(80, 80, 80);
-    doc.text(nombre.toUpperCase(), x + colW / 2, y + 5.5, { align: "center" });
+    doc.setTextColor(255, 255, 255);
+    doc.text(LABEL_MAPA[nombre] || nombre.toUpperCase(), x + colW / 2, y + 5.5, { align: "center" });
+    // Imagen
     try {
-      doc.addImage(dataUrl, "JPEG", x + 2, y + 7, colW - 4, colH - 1);
+      doc.addImage(dataUrl, "JPEG", x + 2, y + 9, colW - 4, colH - 1);
     } catch(e) { console.warn("Error imagen", nombre, e); }
   });
 
-  return y0 + 2 * (colH + 14);
+  return y0 + 2 * (colH + 16);
 }
 
 async function dibujarLogo(doc, logoDataUrl, afterY, pageW, margin) {
@@ -118,18 +150,26 @@ async function construirPDF() {
   var raw = sessionStorage.getItem("doxa_vistas");
   if (!raw) return null;
 
-  var guardado = JSON.parse(raw);
+  // --- MEJORA: Parseo seguro de JSON ---
+  var guardado;
+  try {
+    guardado = JSON.parse(raw);
+  } catch(e) {
+    console.error("Error al leer doxa_vistas:", e);
+    return null;
+  }
 
   // Compatibilidad con formato anterior (objeto plano Frente/Trasera/...)
   var tipo, prendas;
-  if (guardado.prendas) {
+  if (guardado && guardado.prendas) {
     tipo    = guardado.tipo;
     prendas = guardado.prendas;
-  } else {
+  } else if (guardado) {
     tipo    = "playera";
     prendas = { playera: guardado };
+  } else {
+    return null;
   }
-
   var rawConj = sessionStorage.getItem("doxa_conjunto");
   var nombreConj = "Diseño personalizado";
   try { if (rawConj) nombreConj = JSON.parse(rawConj).nombre || nombreConj; } catch(e) {}
@@ -145,38 +185,36 @@ async function construirPDF() {
   var doc = new jsPDFCls({ orientation: "portrait", unit: "mm", format: "a4" });
   dibujarEncabezado(doc, nombreConj, pageW, margin);
 
-  var listaPrendas = Object.keys(prendas);
-  var dosPrendas   = listaPrendas.length > 1;
+  var esConjunto   = tipo === "playera_short" || tipo === "playera_short_calceta";
+  var tienePlayera = (tipo === "playera" || esConjunto) && !!prendas.playera;
+  var tieneShort   = (tipo === "short"   || esConjunto) && !!prendas.short;
+  var dosPrendas   = tienePlayera && tieneShort;
+
+  var colW       = (pageW - margin * 2 - 8) / 2;
+  var colH       = colW * 0.85;
+  var alturaGrid = 13 + 2 * (colH + 16);
+  var espacioLib = pageH - 20 - (startY + alturaGrid);
 
   if (!dosPrendas) {
-    // ── Prenda única: grid centrado sin subtítulo ─────────────
-    var afterGrid = dibujarGrid(
-      doc, prendas[listaPrendas[0]], null, startY, pageW, margin
-    );
+    // Prenda única
+    var vistaUnica = tienePlayera ? prendas.playera : prendas.short;
+    var afterGrid  = dibujarGrid(doc, vistaUnica, null, startY, pageW, margin);
     await dibujarLogo(doc, logoDataUrl, afterGrid, pageW, margin);
 
   } else {
-    // ── Dos prendas: página 1 = Playera, página 2 = Short ─────
-    var colW        = (pageW - margin * 2 - 8) / 2;
-    var colH        = colW * 0.85;
-    var alturaGrid  = 9 + 2 * (colH + 14);  // subtitulo + 2 filas
-    var espacioLogo = pageH - 20 - (startY + alturaGrid);
-
     // Página 1 — Playera
-    if (prendas.playera) {
+    if (tienePlayera) {
       var ag1 = dibujarGrid(doc, prendas.playera, "Playera", startY, pageW, margin);
-      if (logoDataUrl && espacioLogo > 40) {
+      if (logoDataUrl && espacioLib > 40) {
         await dibujarLogo(doc, logoDataUrl, ag1, pageW, margin);
       }
     }
-
     // Página 2 — Short
-    if (prendas.short) {
+    if (tieneShort) {
       doc.addPage();
       dibujarEncabezado(doc, nombreConj, pageW, margin);
       var ag2 = dibujarGrid(doc, prendas.short, "Short", startY, pageW, margin);
-      // Logo en página 2 solo si no hubo playera (no cabría repetirlo)
-      if (logoDataUrl && !prendas.playera) {
+      if (logoDataUrl && !tienePlayera) {
         await dibujarLogo(doc, logoDataUrl, ag2, pageW, margin);
       }
     }
@@ -187,6 +225,10 @@ async function construirPDF() {
   for (var p = 1; p <= totalPages; p++) {
     doc.setPage(p);
     dibujarPiePagina(doc, pageW, pageH, margin);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(160, 160, 160);
+    doc.text("Página " + p + " de " + totalPages, pageW - margin, pageH - 8, { align: "right" });
   }
 
   return doc;
@@ -196,12 +238,14 @@ async function construirPDF() {
 async function mostrarPDFEnPagina() {
   if (!sessionStorage.getItem("doxa_vistas")) return;
 
-  document.getElementById("vistasDiseno").style.display = "block";
+  var vistasDiv = document.getElementById("vistasDiseno");
+  if (vistasDiv) vistasDiv.style.display = "block";
 
   var t = 0;
   while (!window.jspdf && t < 50) { await new Promise(function(r) { setTimeout(r, 100); }); t++; }
   if (!window.jspdf) {
-    document.getElementById("pdfCargando").textContent = "No se pudo cargar el generador de PDF.";
+    var cargandoTxt = document.getElementById("pdfCargando");
+    if (cargandoTxt) cargandoTxt.textContent = "No se pudo cargar el generador de PDF.";
     return;
   }
 
@@ -214,9 +258,14 @@ async function mostrarPDFEnPagina() {
     var blob    = doc.output("blob");
     var blobUrl = URL.createObjectURL(blob);
 
-    document.getElementById("pdfVisor").src           = blobUrl;
-    document.getElementById("pdfVisor").style.display = "block";
-    document.getElementById("pdfCargando").style.display = "none";
+    var visor = document.getElementById("pdfVisor");
+    var cargando = document.getElementById("pdfCargando");
+    
+    if (visor) {
+      visor.src = blobUrl;
+      visor.style.display = "block";
+    }
+    if (cargando) cargando.style.display = "none";
 
     window._pdfBlobUrl = blobUrl;
     try {
@@ -226,13 +275,16 @@ async function mostrarPDFEnPagina() {
 
   } catch(e) {
     console.error("Error generando PDF:", e);
-    document.getElementById("pdfCargando").textContent = "Error al generar la vista previa.";
+    var cargandoErr = document.getElementById("pdfCargando");
+    if (cargandoErr) cargandoErr.textContent = "Error al generar la vista previa.";
   }
 }
 
 // ── Descargar PDF ─────────────────────────────────────────────
 window.descargarPDFVistas = async function() {
   var btn = document.getElementById("btnDescargarPDF");
+  if (!btn) return;
+  
   btn.disabled    = true;
   btn.textContent = "Generando…";
   try {

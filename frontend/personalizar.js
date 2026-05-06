@@ -20,6 +20,7 @@ loadScript(GLTF_LOADER_URL, () =>
 
 // ── Three.js globals ──────────────────────────────────────────
 let renderer, scene, camera, controls;
+let capturandoVistas = false;  // pausa el loop durante la captura del PDF
 const raycaster = new THREE.Raycaster();
 const mouse2D   = new THREE.Vector2();
 
@@ -101,6 +102,7 @@ function iniciarApp() {
 
   (function loop() {
     requestAnimationFrame(loop);
+    if (capturandoVistas) return;  // pausar mientras se capturan vistas para el PDF
     controls.update();
     renderer.render(scene, camera);
     if (spriteSeleccionado) actualizarPosPanel();
@@ -597,7 +599,7 @@ function configurarEditor() {
     prendaActual = "short"; btnShort.classList.add("activo");
     cargarModelo("short");
   } else {
-    // Conjunto completo: precargar ambas prendas
+    // Conjunto completo (playera_short o playera_short_calceta): precargar ambas prendas
     btnPlayera.style.display = ""; btnShort.style.display = ""; bar.style.display = "";
     prendaActual = "playera";
     btnPlayera.classList.add("activo"); btnShort.classList.remove("activo");
@@ -626,6 +628,7 @@ function cargarModeloEnSegundoPlano(prenda) {
       m.position.sub(center.multiplyScalar(scale));
       m.userData.meshes = [];
       m.traverse(n => { if (n.isMesh) m.userData.meshes.push(n); });
+      if (est.colorHex) aplicarColorAlModelo(m, est.colorHex);
       est.modelo = m;
       // NO se agrega a la escena todavía
     },
@@ -635,72 +638,58 @@ function cargarModeloEnSegundoPlano(prenda) {
 }
 
 // ── Captura de vistas ─────────────────────────────────────────
-function capturarVistasPrenda() {
-  return new Promise((resolve) => {
-    const posOrig    = camera.position.clone();
-    const targetOrig = controls.target.clone();
+async function capturarVistasPrenda() {
+  // Pausar el loop de animación para tener control total del renderer
+  capturandoVistas = true;
 
-    // ── Calcular distancia óptima para que la prenda llene el encuadre ──
-    // Se toma el bounding box del modelo activo en la escena para determinar
-    // el radio máximo desde el centro y se ajusta la cámara a esa distancia,
-    // sin importar el zoom actual del usuario.
-    let distanciaCaptura = 2.2; // valor de seguridad
-    const objetosVisibles = scene.children.filter(obj => obj.isMesh || obj.isGroup || obj.isObject3D);
-    if (objetosVisibles.length > 0) {
-      const box = new THREE.Box3();
-      scene.traverse(obj => {
-        if (obj.isMesh) box.expandByObject(obj);
-      });
-      if (!box.isEmpty()) {
-        const size   = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        // Radio de la esfera circunscrita al bounding box
-        const radio = Math.max(size.x, size.y, size.z) * 0.5;
-        // fovRad: la mitad del FOV de la cámara en radianes
-        const fovRad = (camera.fov * Math.PI) / 180 / 2;
-        // Margen del 10 % para que la prenda no toque exactamente los bordes
-        const margen = 0.90;
-        distanciaCaptura = (radio / Math.tan(fovRad)) * (1 / margen);
-        // Ajustar por aspect: si el canvas es más ancho que alto la restricción
-        // viene de la altura, si es más alto viene del ancho.
-        if (camera.aspect < 1) {
-          distanciaCaptura = distanciaCaptura / camera.aspect;
-        }
-      }
-    }
+  const posOrig    = camera.position.clone();
+  const targetOrig = controls.target.clone();
 
-    const alturaCaptura = 0; // centrar verticalmente en Y=0 (modelo centrado)
-    const angulos = [
-      { nombre: "Frente",    rotY: 0 },
-      { nombre: "Trasera",   rotY: Math.PI },
-      { nombre: "Izquierda", rotY:  Math.PI / 2 },
-      { nombre: "Derecha",   rotY: -Math.PI / 2 }
-    ];
-    const vistas = {}; let idx = 0;
+  // Calcular distancia óptima para encuadrar la prenda
+  let distanciaCaptura = 2.2;
+  const box = new THREE.Box3();
+  scene.traverse(obj => { if (obj.isMesh) box.expandByObject(obj); });
+  if (!box.isEmpty()) {
+    const size   = box.getSize(new THREE.Vector3());
+    const radio  = Math.max(size.x, size.y, size.z) * 0.5;
+    const fovRad = (camera.fov * Math.PI) / 180 / 2;
+    distanciaCaptura = (radio / Math.tan(fovRad)) / 0.90;
+    if (camera.aspect < 1) distanciaCaptura /= camera.aspect;
+  }
 
-    function capturarUna() {
-      if (idx >= angulos.length) {
-        camera.position.copy(posOrig); controls.target.copy(targetOrig);
-        controls.update(); renderer.render(scene, camera);
-        resolve(vistas); return;
-      }
-      const { nombre, rotY } = angulos[idx];
-      camera.position.set(
-        Math.sin(rotY) * distanciaCaptura,
-        alturaCaptura,
-        Math.cos(rotY) * distanciaCaptura
-      );
-      controls.target.set(0, 0, 0); controls.update();
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          renderer.render(scene, camera);
-          vistas[nombre] = renderer.domElement.toDataURL("image/jpeg", 0.92);
-          idx++; capturarUna();
-        });
-      });
-    }
-    capturarUna();
-  });
+  const angulos = [
+    { nombre: "Frente",    rotY: 0 },
+    { nombre: "Trasera",   rotY: Math.PI },
+    { nombre: "Izquierda", rotY:  Math.PI / 2 },
+    { nombre: "Derecha",   rotY: -Math.PI / 2 }
+  ];
+  const vistas = {};
+
+  for (const { nombre, rotY } of angulos) {
+    camera.position.set(
+      Math.sin(rotY) * distanciaCaptura,
+      0,
+      Math.cos(rotY) * distanciaCaptura
+    );
+    controls.target.set(0, 0, 0);
+    controls.update();
+    // Esperar 2 frames para que la GPU procese el cambio de cámara
+    await new Promise(r => requestAnimationFrame(r));
+    await new Promise(r => requestAnimationFrame(r));
+    // Render explícito y captura
+    renderer.render(scene, camera);
+    vistas[nombre] = renderer.domElement.toDataURL("image/jpeg", 0.92);
+
+  }
+
+  // Restaurar cámara y reanudar loop
+  camera.position.copy(posOrig);
+  controls.target.copy(targetOrig);
+  controls.update();
+  renderer.render(scene, camera);
+  capturandoVistas = false;
+
+  return vistas;
 }
 
 function esperarModelo(prenda) {
@@ -718,7 +707,15 @@ async function mostrarYCapturar(prenda) {
   const est = estadoPrenda[prenda];
   scene.add(est.modelo);
   est.sprites.forEach(s => scene.add(s.mesh));
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise(r => requestAnimationFrame(() =>
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(r)
+        )
+      )
+    )
+  ));
   const vistas = await capturarVistasPrenda();
   // Ocultar de nuevo
   scene.remove(est.modelo);
@@ -729,7 +726,9 @@ async function mostrarYCapturar(prenda) {
 async function capturarTodasLasVistas() {
   const resultado = {};
 
-  if (conjuntoTipo === "playera" || conjuntoTipo === "playera_short") {
+  const esConjunto = conjuntoTipo === "playera_short" || conjuntoTipo === "playera_short_calceta";
+
+  if (conjuntoTipo === "playera" || esConjunto) {
     await esperarModelo("playera");
     if (prendaActual === "playera") {
       resultado.playera = await capturarVistasPrenda();
@@ -738,7 +737,7 @@ async function capturarTodasLasVistas() {
     }
   }
 
-  if (conjuntoTipo === "short" || conjuntoTipo === "playera_short") {
+  if (conjuntoTipo === "short" || esConjunto) {
     await esperarModelo("short");
     if (prendaActual === "short") {
       resultado.short = await capturarVistasPrenda();
@@ -767,7 +766,9 @@ async function irASiguiente() {
   try {
     const vistas = await capturarTodasLasVistas();
     sessionStorage.setItem("doxa_vistas", JSON.stringify({ tipo: conjuntoTipo, prendas: vistas }));
-  } catch(e) { console.warn("No se pudieron capturar las vistas:", e); }
+  } catch(e) {
+    console.error("[Doxa] Error capturando vistas:", e);
+  }
   window.location.href = "cotizar.html";
 }
 
