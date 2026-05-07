@@ -638,7 +638,7 @@ function cargarModeloEnSegundoPlano(prenda) {
 }
 
 // ── Captura de vistas ─────────────────────────────────────────
-async function capturarVistasPrenda() {
+async function capturarVistasPrenda(prenda) {
   // Pausar el loop de animación para tener control total del renderer
   capturandoVistas = true;
 
@@ -648,7 +648,14 @@ async function capturarVistasPrenda() {
   // Calcular distancia óptima para encuadrar la prenda
   let distanciaCaptura = 2.2;
   const box = new THREE.Box3();
-  scene.traverse(obj => { if (obj.isMesh) box.expandByObject(obj); });
+  // Usar la prenda que se pasa explícitamente, o la activa como fallback
+  const nombrePrenda = prenda || prendaActual;
+  const modeloActivo = estadoPrenda[nombrePrenda] && estadoPrenda[nombrePrenda].modelo;
+  if (modeloActivo) {
+    box.setFromObject(modeloActivo);
+  } else {
+    scene.traverse(obj => { if (obj.isMesh) box.expandByObject(obj); });
+  }
   if (!box.isEmpty()) {
     const size   = box.getSize(new THREE.Vector3());
     const radio  = Math.max(size.x, size.y, size.z) * 0.5;
@@ -707,16 +714,16 @@ async function mostrarYCapturar(prenda) {
   const est = estadoPrenda[prenda];
   scene.add(est.modelo);
   est.sprites.forEach(s => scene.add(s.mesh));
-  await new Promise(r => requestAnimationFrame(() =>
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
-          requestAnimationFrame(r)
-        )
-      )
-    )
-  ));
-  const vistas = await capturarVistasPrenda();
+
+  // Esperar suficientes frames para que WebGL procese texturas y geometría
+  for (let i = 0; i < 10; i++) {
+    renderer.render(scene, camera);
+    await new Promise(r => requestAnimationFrame(r));
+  }
+
+  // Pasar el nombre de la prenda explícitamente para el bounding box correcto
+  const vistas = await capturarVistasPrenda(prenda);
+
   // Ocultar de nuevo
   scene.remove(est.modelo);
   est.sprites.forEach(s => scene.remove(s.mesh));
@@ -725,30 +732,51 @@ async function mostrarYCapturar(prenda) {
 
 async function capturarTodasLasVistas() {
   const resultado = {};
-
   const esConjunto = conjuntoTipo === "playera_short" || conjuntoTipo === "playera_short_calceta";
+
+  // Helper: limpia la escena de ambas prendas y pone solo la pedida
+  async function prepararEscena(prenda) {
+    // Quitar ambas prendas de la escena
+    ["playera", "short"].forEach(p => {
+      const e = estadoPrenda[p];
+      if (e.modelo) {
+        scene.remove(e.modelo);
+        e.sprites.forEach(s => scene.remove(s.mesh));
+      }
+    });
+    // Poner solo la que queremos capturar
+    const est = estadoPrenda[prenda];
+    scene.add(est.modelo);
+    est.sprites.forEach(s => scene.add(s.mesh));
+    // Esperar que WebGL procese texturas
+    for (let i = 0; i < 12; i++) {
+      renderer.render(scene, camera);
+      await new Promise(r => requestAnimationFrame(r));
+    }
+  }
 
   if (conjuntoTipo === "playera" || esConjunto) {
     await esperarModelo("playera");
-    if (prendaActual === "playera") {
-      resultado.playera = await capturarVistasPrenda();
-    } else {
-      resultado.playera = await mostrarYCapturar("playera");
-    }
+    await prepararEscena("playera");
+    resultado.playera = await capturarVistasPrenda("playera");
   }
 
   if (conjuntoTipo === "short" || esConjunto) {
     await esperarModelo("short");
-    if (prendaActual === "short") {
-      resultado.short = await capturarVistasPrenda();
-    } else {
-      resultado.short = await mostrarYCapturar("short");
-    }
+    await prepararEscena("short");
+    resultado.short = await capturarVistasPrenda("short");
   }
 
   // Restaurar la prenda activa en pantalla
+  ["playera", "short"].forEach(p => {
+    const e = estadoPrenda[p];
+    if (e.modelo) {
+      scene.remove(e.modelo);
+      e.sprites.forEach(s => scene.remove(s.mesh));
+    }
+  });
   const estAct = estadoPrenda[prendaActual];
-  if (estAct.modelo && !scene.children.includes(estAct.modelo)) {
+  if (estAct.modelo) {
     scene.add(estAct.modelo);
     estAct.sprites.forEach(s => scene.add(s.mesh));
   }

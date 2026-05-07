@@ -139,6 +139,20 @@ window.enviarPedidoForm = async function() {
   btn.disabled    = true;
   btn.textContent = "Enviando...";
 
+  // ── Adjuntar PDF del diseño y logo del equipo ──────────────
+  try {
+    if (window._pdfBlobUrl) {
+      const resp = await fetch(window._pdfBlobUrl);
+      const buf  = await resp.arrayBuffer();
+      const b64  = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      pedido.pdfBase64 = "data:application/pdf;base64," + b64;
+    }
+  } catch(e) { console.warn("No se pudo adjuntar PDF:", e); }
+
+  const logoDataUrl = sessionStorage.getItem("doxa_logo");
+  if (logoDataUrl) pedido.logoBase64 = logoDataUrl;
+  // ── Fin adjuntos ───────────────────────────────────────────
+
   try {
     await enviarPedido(pedido);
 
@@ -175,3 +189,11 @@ window.enviarPedidoForm = async function() {
     btn.textContent = "Enviar cotización ✓";
   }
 };
+
+// ── Bindings por addEventListener (respaldo para ES modules) ──
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("btnIrContacto")
+    ?.addEventListener("click", window.irAContacto);
+  document.getElementById("btnDescargarPDF")
+    ?.addEventListener("click", window.descargarPDFVistas);
+});

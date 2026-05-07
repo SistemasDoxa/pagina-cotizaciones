@@ -4,10 +4,22 @@
 // ============================================================
 require("dotenv").config();
 
-const express   = require("express");
-const cors      = require("cors");
-const admin     = require("firebase-admin");
-const path      = require("path");
+const express      = require("express");
+const cors         = require("cors");
+const admin        = require("firebase-admin");
+const path         = require("path");
+const nodemailer   = require("nodemailer");
+
+// ── Transporter de correo (Gmail con contraseña de app) ──────
+const mailer = nodemailer.createTransport({
+  host:   process.env.MAIL_HOST || "smtp.gmail.com",
+  port:   Number(process.env.MAIL_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
 // ── Inicializar Firebase Admin con variables de entorno ──────
 admin.initializeApp({
@@ -27,7 +39,7 @@ app.use(cors({
   origin: process.env.FRONTEND_ORIGIN || "*",   // en producción limitar al dominio real
   methods: ["GET", "POST"],
 }));
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "15mb" }));
 
 // Servir el frontend estático
 app.use(express.static(path.join(__dirname, "../frontend")));
@@ -118,6 +130,99 @@ app.post("/api/pedidos", async (req, res) => {
     };
 
     const ref = await db.collection("pedidos").add(pedido);
+
+    // ── Enviar correo automático ─────────────────────────────
+    try {
+      const { pdfBase64, logoBase64 } = req.body;
+
+      const tallasHTML = Object.entries(pedido.tallas)
+        .map(([t, c]) => `<tr>
+          <td style="padding:5px 12px;border:1px solid #ddd">Talla ${t}</td>
+          <td style="padding:5px 12px;border:1px solid #ddd">${c} pieza${c > 1 ? "s" : ""}</td>
+        </tr>`).join("");
+
+      const htmlCorreo = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+          <div style="background:#c0392b;padding:20px;text-align:center">
+            <h1 style="color:#fff;margin:0">Doxa Deportes</h1>
+            <p style="color:#fff;margin:4px 0">Cotización recibida</p>
+          </div>
+          <div style="padding:24px">
+            <p>Hola <strong>${pedido.nombre}</strong>,</p>
+            <p>Recibimos tu cotización. Aquí está el resumen:</p>
+            <table style="border-collapse:collapse;width:100%">
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Conjunto</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.nombreConjunto}</td></tr>
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Tela</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.tela}</td></tr>
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Trabajo</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.trabajo}</td></tr>
+              ${tallasHTML}
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Total piezas</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.totalPiezas}</td></tr>
+              ${pedido.precioUnitario > 0 ? `
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Precio unitario</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd">$${pedido.precioUnitario.toFixed(2)}</td></tr>
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Total estimado</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd"><strong>$${pedido.totalPrecio.toFixed(2)}</strong></td></tr>
+              ` : ""}
+              ${pedido.nota ? `
+              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Nota</strong></td>
+                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.nota}</td></tr>` : ""}
+            </table>
+            <p style="margin-top:20px">En breve nos pondremos en contacto al número <strong>${pedido.telefono}</strong>.</p>
+            <p>¡Gracias por confiar en Doxa Deportes!</p>
+          </div>
+          <div style="background:#f5f5f5;padding:12px;text-align:center;font-size:12px;color:#888">
+            www.doxadeportes.com · @doxa.deportes · facebook.com/dep.DOXA
+          </div>
+        </div>`;
+
+      // Adjuntos: PDF del diseño y logo del equipo
+      const attachments = [];
+      if (pdfBase64) {
+        attachments.push({
+          filename:    `Doxa_Diseño_${(pedido.nombreConjunto || "uniforme").replace(/\s+/g, "_")}.pdf`,
+          content:     pdfBase64.replace(/^data:application\/pdf;base64,/, ""),
+          encoding:    "base64",
+          contentType: "application/pdf",
+        });
+      }
+      if (logoBase64) {
+        const ext = logoBase64.startsWith("data:image/png") ? "png" : "jpg";
+        attachments.push({
+          filename:    `logo_equipo.${ext}`,
+          content:     logoBase64.replace(/^data:[^;]+;base64,/, ""),
+          encoding:    "base64",
+          contentType: ext === "png" ? "image/png" : "image/jpeg",
+        });
+      }
+
+      // Correo al cliente
+      await mailer.sendMail({
+        from:        `"Doxa Deportes" <${process.env.MAIL_USER}>`,
+        to:          pedido.email,
+        subject:     `Doxa Deportes — Cotización recibida: ${pedido.nombreConjunto}`,
+        html:        htmlCorreo,
+        attachments,
+      });
+
+      // Copia interna
+      if (process.env.MAIL_INTERNO) {
+        await mailer.sendMail({
+          from:        `"Doxa Web" <${process.env.MAIL_USER}>`,
+          to:          process.env.MAIL_INTERNO,
+          subject:     `[Nuevo pedido] ${pedido.nombreConjunto} — ${pedido.nombre}`,
+          html:        `<p><strong>ID Firestore:</strong> ${ref.id}</p><p><strong>Teléfono:</strong> ${pedido.telefono}</p>` + htmlCorreo,
+          attachments,
+        });
+      }
+    } catch (mailErr) {
+      // El correo falla en silencio — el pedido ya quedó guardado en Firestore
+      console.error("⚠️  Error enviando correo:", mailErr.message);
+    }
+    // ── Fin correo ───────────────────────────────────────────
+
     res.json({ id: ref.id, ok: true });
   } catch (err) {
     console.error("pedidos error:", err);
