@@ -141,7 +141,11 @@ window.enviarPedidoForm = async function() {
 
   // ── Adjuntar PDF del diseño y logo del equipo ──────────────
   try {
-    if (window._pdfBlobUrl) {
+    if (window._pdfBase64) {
+      // Usar base64 directo (evita el problema de Blob URL cross-partition en Chrome)
+      pedido.pdfBase64 = window._pdfBase64;
+    } else if (window._pdfBlobUrl) {
+      // Fallback: intentar fetch del blob
       const resp  = await fetch(window._pdfBlobUrl);
       const buf   = await resp.arrayBuffer();
       const bytes = new Uint8Array(buf);

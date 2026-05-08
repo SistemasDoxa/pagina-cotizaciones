@@ -258,6 +258,9 @@ async function mostrarPDFEnPagina() {
     var blob    = doc.output("blob");
     var blobUrl = URL.createObjectURL(blob);
 
+    // Guardar también como base64 para evitar el problema de Blob URL cross-partition
+    window._pdfBase64 = "data:application/pdf;base64," + doc.output("datauristring").split(",")[1];
+
     var visor = document.getElementById("pdfVisor");
     var cargando = document.getElementById("pdfCargando");
     
