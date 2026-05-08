@@ -142,10 +142,12 @@ window.enviarPedidoForm = async function() {
   // ── Adjuntar PDF del diseño y logo del equipo ──────────────
   try {
     if (window._pdfBlobUrl) {
-      const resp = await fetch(window._pdfBlobUrl);
-      const buf  = await resp.arrayBuffer();
-      const b64  = btoa(String.fromCharCode(...new Uint8Array(buf)));
-      pedido.pdfBase64 = "data:application/pdf;base64," + b64;
+      const resp  = await fetch(window._pdfBlobUrl);
+      const buf   = await resp.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary  = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      pedido.pdfBase64 = "data:application/pdf;base64," + btoa(binary);
     }
   } catch(e) { console.warn("No se pudo adjuntar PDF:", e); }
 
