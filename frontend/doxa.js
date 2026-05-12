@@ -5,15 +5,46 @@
 
 const API = "/api";   // relativo al mismo servidor
 
-// ── Navbar dropdown ──────────────────────────────────────────
+// ── Navbar: dropdown desktop + hamburguesa móvil ─────────────
 export function initNavbar() {
-  const btn = document.getElementById("menuPersonalizacion");
-  const sub = document.getElementById("submenuPersonalizacion");
-  if (!btn || !sub) return;
-  btn.addEventListener("click", e => { e.preventDefault(); sub.classList.toggle("show"); });
+  // Dropdown desktop
+  const btnDrop = document.getElementById("menuPersonalizacion");
+  const sub     = document.getElementById("submenuPersonalizacion");
+  if (btnDrop && sub) {
+    btnDrop.addEventListener("click", e => { e.preventDefault(); sub.classList.toggle("show"); });
+    document.addEventListener("click", e => {
+      if (!btnDrop.contains(e.target) && !sub.contains(e.target))
+        sub.classList.remove("show");
+    });
+  }
+
+  // Hamburguesa móvil
+  const btnHam   = document.getElementById("btnHamburguesa");
+  const navMobile = document.getElementById("navMobile");
+  if (!btnHam || !navMobile) return;
+
+  btnHam.addEventListener("click", e => {
+    e.stopPropagation();
+    const abierto = navMobile.classList.toggle("abierto");
+    btnHam.classList.toggle("abierto", abierto);
+    btnHam.setAttribute("aria-expanded", abierto);
+  });
+
+  // Cerrar al hacer click fuera
   document.addEventListener("click", e => {
-    if (!btn.contains(e.target) && !sub.contains(e.target))
-      sub.classList.remove("show");
+    if (!btnHam.contains(e.target) && !navMobile.contains(e.target)) {
+      navMobile.classList.remove("abierto");
+      btnHam.classList.remove("abierto");
+      btnHam.setAttribute("aria-expanded", false);
+    }
+  });
+
+  // Cerrar al navegar a un link
+  navMobile.querySelectorAll("a").forEach(a => {
+    a.addEventListener("click", () => {
+      navMobile.classList.remove("abierto");
+      btnHam.classList.remove("abierto");
+    });
   });
 }
 

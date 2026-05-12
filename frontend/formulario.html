@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cotizaciones Doxa</title>
+  <title>Contacto | Doxa</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -51,42 +51,53 @@
     </div>
   </header>
 
-  <section class="banner no-text">
-    <div class="banner-imgs">
-      <img src="img/Logo.png" alt="Uniformes Doxa">
+<!-- ENCABEZADO -->
+<div class="form-hero">
+  <h1>¿Necesitas algo más?</h1>
+  <p>Si buscas un producto que no encuentras en nuestro catálogo, déjanos tus datos y cuéntanos qué necesitas. <strong>Nosotros nos ponemos en contacto contigo.</strong></p>
+</div>
+
+<!-- FORMULARIO -->
+<div class="contacto-wrap">
+
+  <section id="seccionForm">
+    <div class="contacto-form">
+      <div class="form-group">
+        <label for="cNombre">Nombre completo <span class="req">*</span></label>
+        <input type="text" id="cNombre" placeholder="Ej. Juan García López" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label for="cEmail">Correo electrónico <span class="req">*</span></label>
+        <input type="email" id="cEmail" placeholder="ejemplo@correo.com">
+      </div>
+      <div class="form-group">
+        <label for="cTelefono">Teléfono <span class="req">*</span></label>
+        <input type="tel" id="cTelefono" placeholder="10 dígitos" maxlength="15">
+      </div>
+      <div class="form-group">
+        <label for="cMensaje">¿Qué producto o servicio necesitas? <span class="req">*</span></label>
+        <textarea id="cMensaje" placeholder="Cuéntanos qué buscas: tipo de prenda, deporte, cantidad aproximada, fecha de entrega, etc." rows="5" maxlength="600"></textarea>
+        <small class="char-counter"><span id="mensajeCount">0</span>/600</small>
+      </div>
+
+      <button class="btn-enviar" id="btnEnviar">Enviar mensaje →</button>
     </div>
   </section>
 
-  <h2 class="section-title">Personaliza la camiseta de tu equipo</h2>
-
-  <section class="sports">
-    <a href="soccer.html" class="card-link">
-      <div class="card">
-        <img src="img/soccer.jpeg" alt="Soccer">
-        <div class="card-text">SOCCER</div>
-      </div>
-    </a>
-    <a href="basquetbol.html" class="card-link">
-      <div class="card">
-        <img src="img/basquet.jpeg" alt="Basquetbol">
-        <div class="card-text">BÁSQUETBOL</div>
-      </div>
-    </a>
-    <a href="voleibol.html" class="card-link">
-      <div class="card">
-        <img src="img/voleibol.jpeg" alt="Voleibol">
-        <div class="card-text">VOLEIBOL</div>
-      </div>
-    </a>
+  <!-- CONFIRMACIÓN -->
+  <section id="seccionListo" style="display:none">
+    <div class="listo-box">
+      <div class="listo-icon">✅</div>
+      <h2>¡Mensaje recibido!</h2>
+      <p>Gracias, <strong id="listoNombre"></strong>. Nos pondremos en contacto contigo a la brevedad al correo <strong id="listoEmail"></strong> o al teléfono <strong id="listoTel"></strong>.</p>
+      <p>En Doxa encontramos la solución que tu equipo necesita.</p>
+      <a href="index.html" class="btn-inicio">Volver al inicio</a>
+    </div>
   </section>
 
-  <section class="bottom-banner">
-    <img src="img/varios 1.png" alt="Deportes">
-    <a href="formulario.html" class="bottom-banner-cta">
-      <span>¡Cotiza tu uniforme ahora!</span>
-    </a>
-  </section>
+</div>
 
+<!-- FOOTER -->
 <footer class="footer">
   <div class="footer-container">
     <div class="footer-section">
@@ -125,6 +136,6 @@
   </a>
 </footer>
 
-<script type="module" src="index.js"></script>
+<script type="module" src="formulario.js"></script>
 </body>
 </html>

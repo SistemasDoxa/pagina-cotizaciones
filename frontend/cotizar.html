@@ -8,23 +8,48 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
-<header class="navbar">
-  <div class="brand">Cotizaciones Doxa</div>
-  <nav>
-    <a href="index.html">Inicio</a>
-    <div class="dropdown">
-      <a href="#" id="menuPersonalizacion">Personalización</a>
-      <div class="dropdown-content" id="submenuPersonalizacion">
+  <header class="navbar">
+    <!-- Logo izquierda -->
+    <img src="img/LogoDoxa.jpeg" alt="Doxa Deportes" class="navbar-logo">
+
+    <!-- Nombre centrado -->
+    <div class="brand">Cotización Uniformes</div>
+
+    <!-- Menú desktop (derecha) -->
+    <nav>
+      <a href="index.html">Inicio</a>
+      <div class="dropdown">
+        <a href="#" id="menuPersonalizacion">Personalización</a>
+        <div class="dropdown-content" id="submenuPersonalizacion">
+          <a href="soccer.html">Soccer</a>
+          <a href="basquetbol.html">Basquetbol</a>
+          <a href="voleibol.html">Voleibol</a>
+        </div>
+      </div>
+      <a href="sucursales.html">Sucursales</a>
+      <a href="#">Nosotros</a>
+    </nav>
+
+    <!-- Botón hamburguesa (solo móvil) -->
+    <button class="hamburger" id="btnHamburguesa" aria-label="Menú">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Menú móvil desplegable -->
+    <div class="nav-mobile" id="navMobile">
+      <a href="index.html">Inicio</a>
+      <div class="mobile-sub">
+        <span class="mobile-sub-label">Personalización</span>
         <a href="soccer.html">Soccer</a>
         <a href="basquetbol.html">Basquetbol</a>
         <a href="voleibol.html">Voleibol</a>
       </div>
+      <a href="sucursales.html">Sucursales</a>
+      <a href="#">Nosotros</a>
     </div>
-    <a href="#">Sucursales</a>
-    <a href="#">Nosotros</a>
-  </nav>
-</header>
+  </header>
 
 <!-- PASOS -->
 <div class="cotizar-steps">

@@ -36,7 +36,7 @@ const PORT = process.env.PORT || 3001;
 
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || "*",   // en producción limitar al dominio real
+  origin: process.env.FRONTEND_ORIGIN || "*",
   methods: ["GET", "POST"],
 }));
 app.use(express.json({ limit: "15mb" }));
@@ -49,10 +49,21 @@ function snap2arr(snapshot) {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+// ── Bloque HTML del encabezado rojo compartido ───────────────
+const headerCorreo = `
+  <div style="background:#c0392b;padding:20px;text-align:center">
+    <h1 style="color:#fff;margin:0">Doxa Deportes</h1>
+    <p style="color:#fff;margin:4px 0 0">Uniformes deportivos personalizados</p>
+  </div>`;
+
+const footerCorreo = `
+  <div style="background:#f5f5f5;padding:12px;text-align:center;font-size:12px;color:#888">
+    www.doxadeportes.com · @doxa.deportes · facebook.com/dep.DOXA
+  </div>`;
+
 // ── RUTAS API ────────────────────────────────────────────────
 
 // GET /api/catalogo/:coleccion
-// Devuelve todos los documentos de una colección.
 app.get("/api/catalogo/:coleccion", async (req, res) => {
   try {
     const snap = await db.collection(req.params.coleccion).get();
@@ -64,8 +75,6 @@ app.get("/api/catalogo/:coleccion", async (req, res) => {
 });
 
 // POST /api/precio
-// Body: { conjunto, talla, tela, trabajo, deporte }
-// Devuelve el documento de precio que coincide.
 app.post("/api/precio", async (req, res) => {
   try {
     const { conjunto, talla, tela, trabajo, deporte } = req.body;
@@ -90,7 +99,6 @@ app.post("/api/precio", async (req, res) => {
 });
 
 // POST /api/pedidos
-// Guarda un nuevo pedido en Firestore.
 app.post("/api/pedidos", async (req, res) => {
   try {
     const {
@@ -98,6 +106,7 @@ app.post("/api/pedidos", async (req, res) => {
       tela, trabajo, precioUnitario,
       tallas, totalPiezas, totalPrecio,
       nombre, email, telefono, nota,
+      origen,
     } = req.body;
 
     // Validación básica
@@ -112,21 +121,22 @@ app.post("/api/pedidos", async (req, res) => {
     }
 
     const pedido = {
-      conjunto:      conjunto      || "",
-      deporte:       deporte       || "",
+      conjunto:       conjunto       || "",
+      deporte:        deporte        || "",
       nombreConjunto: nombreConjunto || "",
-      tela:          tela          || "",
-      trabajo:       trabajo       || "",
+      tela:           tela           || "",
+      trabajo:        trabajo        || "",
       precioUnitario: Number(precioUnitario) || 0,
-      tallas:        tallas        || {},
-      totalPiezas:   Number(totalPiezas) || 0,
-      totalPrecio:   Number(totalPrecio) || 0,
+      tallas:         tallas         || {},
+      totalPiezas:    Number(totalPiezas) || 0,
+      totalPrecio:    Number(totalPrecio) || 0,
       nombre,
       email,
       telefono,
-      nota:          nota          || "",
-      estado:        "pendiente",
-      creadoEn:      admin.firestore.FieldValue.serverTimestamp(),
+      nota:           nota           || "",
+      origen:         origen         || "cotizacion",
+      estado:         "pendiente",
+      creadoEn:       admin.firestore.FieldValue.serverTimestamp(),
     };
 
     const ref = await db.collection("pedidos").add(pedido);
@@ -134,51 +144,89 @@ app.post("/api/pedidos", async (req, res) => {
     // ── Enviar correo automático ─────────────────────────────
     try {
       const { pdfBase64, logoBase64 } = req.body;
+      let htmlCorreo, subject, subjectInterno;
 
-      const tallasHTML = Object.entries(pedido.tallas)
-        .map(([t, c]) => `<tr>
-          <td style="padding:5px 12px;border:1px solid #ddd">Talla ${t}</td>
-          <td style="padding:5px 12px;border:1px solid #ddd">${c} pieza${c > 1 ? "s" : ""}</td>
-        </tr>`).join("");
+      // ── Template según origen ──────────────────────────────
+      if (origen === "formulario-contacto") {
 
-      const htmlCorreo = `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
-          <div style="background:#c0392b;padding:20px;text-align:center">
-            <h1 style="color:#fff;margin:0">Doxa Deportes</h1>
-            <p style="color:#fff;margin:4px 0">Cotización recibida</p>
-          </div>
-          <div style="padding:24px">
-            <p>Hola <strong>${pedido.nombre}</strong>,</p>
-            <p>Recibimos tu cotización. Aquí está el resumen:</p>
-            <table style="border-collapse:collapse;width:100%">
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Conjunto</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.nombreConjunto}</td></tr>
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Tela</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.tela}</td></tr>
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Trabajo</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.trabajo}</td></tr>
-              ${tallasHTML}
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Total piezas</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.totalPiezas}</td></tr>
-              ${pedido.precioUnitario > 0 ? `
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Precio unitario</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd">$${pedido.precioUnitario.toFixed(2)}</td></tr>
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Total estimado</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd"><strong>$${pedido.totalPrecio.toFixed(2)}</strong></td></tr>
-              ` : ""}
-              ${pedido.nota ? `
-              <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Nota</strong></td>
-                  <td style="padding:5px 12px;border:1px solid #ddd">${pedido.nota}</td></tr>` : ""}
-            </table>
-            <p style="margin-top:20px">En breve nos pondremos en contacto al número <strong>${pedido.telefono}</strong>.</p>
-            <p>¡Gracias por confiar en Doxa Deportes!</p>
-          </div>
-          <div style="background:#f5f5f5;padding:12px;text-align:center;font-size:12px;color:#888">
-            www.doxadeportes.com · @doxa.deportes · facebook.com/dep.DOXA
-          </div>
-        </div>`;
+        // Correo simple para el formulario general de contacto
+        subject        = "Doxa Deportes — Recibimos tu mensaje";
+        subjectInterno = `[Nuevo contacto] ${pedido.nombre}`;
 
-      // Adjuntos: PDF del diseño y logo del equipo
+        htmlCorreo = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+            ${headerCorreo}
+            <div style="padding:28px 24px">
+              <p style="font-size:15px">Hola <strong>${pedido.nombre}</strong>,</p>
+              <p style="color:#444">Recibimos tu mensaje. En breve un asesor de Doxa se pondrá en contacto contigo.</p>
+
+              <div style="background:#f9f9f9;border-left:4px solid #c0392b;padding:14px 18px;margin:20px 0;border-radius:4px">
+                <p style="margin:0 0 6px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:.05em">Tu mensaje</p>
+                <p style="margin:0;color:#222;font-size:15px">${pedido.nota}</p>
+              </div>
+
+              <table style="border-collapse:collapse;width:100%;margin-top:8px">
+                <tr>
+                  <td style="padding:6px 12px;border:1px solid #ddd;color:#666;width:40%"><strong>Teléfono</strong></td>
+                  <td style="padding:6px 12px;border:1px solid #ddd">${pedido.telefono}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 12px;border:1px solid #ddd;color:#666"><strong>Correo</strong></td>
+                  <td style="padding:6px 12px;border:1px solid #ddd">${pedido.email}</td>
+                </tr>
+              </table>
+
+              <p style="margin-top:24px;color:#555">¡Gracias por contactarnos! Encontraremos la solución que tu equipo necesita.</p>
+            </div>
+            ${footerCorreo}
+          </div>`;
+
+      } else {
+
+        // Correo completo de cotización (comportamiento original)
+        subject        = `Doxa Deportes — Cotización recibida: ${pedido.nombreConjunto}`;
+        subjectInterno = `[Nuevo pedido] ${pedido.nombreConjunto} — ${pedido.nombre}`;
+
+        const tallasHTML = Object.entries(pedido.tallas)
+          .map(([t, c]) => `<tr>
+            <td style="padding:5px 12px;border:1px solid #ddd">Talla ${t}</td>
+            <td style="padding:5px 12px;border:1px solid #ddd">${c} pieza${c > 1 ? "s" : ""}</td>
+          </tr>`).join("");
+
+        htmlCorreo = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+            ${headerCorreo}
+            <div style="padding:24px">
+              <p>Hola <strong>${pedido.nombre}</strong>,</p>
+              <p>Recibimos tu cotización. Aquí está el resumen:</p>
+              <table style="border-collapse:collapse;width:100%">
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Conjunto</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd">${pedido.nombreConjunto}</td></tr>
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Tela</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd">${pedido.tela}</td></tr>
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Trabajo</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd">${pedido.trabajo}</td></tr>
+                ${tallasHTML}
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Total piezas</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd">${pedido.totalPiezas}</td></tr>
+                ${pedido.precioUnitario > 0 ? `
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Precio unitario</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd">$${pedido.precioUnitario.toFixed(2)}</td></tr>
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Total estimado</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd"><strong>$${pedido.totalPrecio.toFixed(2)}</strong></td></tr>
+                ` : ""}
+                ${pedido.nota ? `
+                <tr><td style="padding:5px 12px;border:1px solid #ddd"><strong>Nota</strong></td>
+                    <td style="padding:5px 12px;border:1px solid #ddd">${pedido.nota}</td></tr>` : ""}
+              </table>
+              <p style="margin-top:20px">En breve nos pondremos en contacto al número <strong>${pedido.telefono}</strong>.</p>
+              <p>¡Gracias por confiar en Doxa Deportes!</p>
+            </div>
+            ${footerCorreo}
+          </div>`;
+      }
+
+      // Adjuntos (solo aplican para cotizaciones con diseño)
       const attachments = [];
       if (pdfBase64) {
         attachments.push({
@@ -202,7 +250,7 @@ app.post("/api/pedidos", async (req, res) => {
       await mailer.sendMail({
         from:        `"Doxa Deportes" <${process.env.MAIL_USER}>`,
         to:          pedido.email,
-        subject:     `Doxa Deportes — Cotización recibida: ${pedido.nombreConjunto}`,
+        subject,
         html:        htmlCorreo,
         attachments,
       });
@@ -212,13 +260,13 @@ app.post("/api/pedidos", async (req, res) => {
         await mailer.sendMail({
           from:        `"Doxa Web" <${process.env.MAIL_USER}>`,
           to:          process.env.MAIL_INTERNO,
-          subject:     `[Nuevo pedido] ${pedido.nombreConjunto} — ${pedido.nombre}`,
+          subject:     subjectInterno,
           html:        `<p><strong>ID Firestore:</strong> ${ref.id}</p><p><strong>Teléfono:</strong> ${pedido.telefono}</p>` + htmlCorreo,
           attachments,
         });
       }
+
     } catch (mailErr) {
-      // El correo falla en silencio — el pedido ya quedó guardado en Firestore
       console.error("⚠️  Error enviando correo:", mailErr.message);
     }
     // ── Fin correo ───────────────────────────────────────────
