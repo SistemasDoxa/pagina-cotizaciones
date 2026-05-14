@@ -570,7 +570,7 @@ body {
       inset: 0;
       display: flex;
       align-items: center;
-      justify-content: flex-end;   /* texto a la derecha */
+      justify-content: flex-end; 
       padding-right: 6%;
       text-decoration: none;
       -webkit-tap-highlight-color: transparent;
@@ -581,7 +581,7 @@ body {
 
 
     .bottom-banner-cta span {
-      color: #ffffff;
+      color: #FFFFFF;
       font-size: clamp(1.2rem, 3.5vw, 2.5rem);
       font-weight: 800;
       letter-spacing: 0.05em;
