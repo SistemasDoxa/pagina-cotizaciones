@@ -22,20 +22,44 @@
 })();
 
 // ── Helpers de estilo ─────────────────────────────────────────
-function dibujarEncabezado(doc, nombreConj, pageW, margin) {
+async function dibujarEncabezado(doc, nombreConj, pageW, margin) {
   const fecha = new Date().toLocaleDateString("es-MX", {
     year: "numeric", month: "long", day: "numeric"
   });
+
   doc.setFillColor(192, 57, 43);
-  doc.rect(0, 0, pageW, 24, "F");
+  doc.rect(0, 0, pageW, 28, "F");
+
+  // ── Logo Doxa en el encabezado ────────────────────────────
+  var textX = margin;
+  try {
+    var tmpImg = new Image();
+    await new Promise(function(res, rej) {
+      tmpImg.onload = res;
+      tmpImg.onerror = rej;
+      tmpImg.src = "img/LogoDoxa.jpeg";
+    });
+    var asp   = tmpImg.naturalWidth / tmpImg.naturalHeight;
+    var logoH = 20;
+    var logoW = logoH * asp;
+    // Fondo blanco redondeado detrás del logo
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin - 1, 3, logoW + 4, logoH + 2, 2, 2, "F");
+    doc.addImage("img/LogoDoxa.jpeg", "JPEG", margin, 4, logoW, logoH);
+    textX = margin + logoW + 8;
+  } catch(e) {
+    console.warn("No se pudo cargar LogoDoxa.jpeg en el encabezado:", e);
+  }
+
+  // ── Textos del encabezado ─────────────────────────────────
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(15);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
-  doc.text("Doxa Deportes — Vista de diseño", margin, 10);
-  doc.setFontSize(9);
+  doc.text("Vista de diseño", textX, 12);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.text("Conjunto: " + nombreConj, margin, 18);
-  doc.text("Fecha: " + fecha, pageW - margin, 18, { align: "right" });
+  doc.text("Conjunto: " + nombreConj, textX, 21);
+  doc.text("Fecha: " + fecha, pageW - margin, 21, { align: "right" });
 }
 
 function dibujarPiePagina(doc, pageW, pageH, margin) {
@@ -180,10 +204,10 @@ async function construirPDF() {
   var pageW  = 210;
   var pageH  = 297;
   var margin = 14;
-  var startY = 30;
+  var startY = 34;  // aumentado de 30 → 34 para el encabezado más alto
 
   var doc = new jsPDFCls({ orientation: "portrait", unit: "mm", format: "a4" });
-  dibujarEncabezado(doc, nombreConj, pageW, margin);
+  await dibujarEncabezado(doc, nombreConj, pageW, margin);
 
   var esConjunto   = tipo === "playera_short" || tipo === "playera_short_calceta";
   var tienePlayera = (tipo === "playera" || esConjunto) && !!prendas.playera;
@@ -212,7 +236,7 @@ async function construirPDF() {
     // Página 2 — Short
     if (tieneShort) {
       doc.addPage();
-      dibujarEncabezado(doc, nombreConj, pageW, margin);
+      await dibujarEncabezado(doc, nombreConj, pageW, margin);
       var ag2 = dibujarGrid(doc, prendas.short, "Short", startY, pageW, margin);
       if (logoDataUrl && !tienePlayera) {
         await dibujarLogo(doc, logoDataUrl, ag2, pageW, margin);
