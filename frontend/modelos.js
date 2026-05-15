@@ -17,7 +17,7 @@ export function initModelos() {
       if (!estaAbierto) {
         target.classList.add("activo");
         card.classList.add("activo");
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        target.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
     });
   });

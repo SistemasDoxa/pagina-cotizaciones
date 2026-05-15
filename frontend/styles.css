@@ -495,20 +495,21 @@ body {
 
 /* CONTENEDOR GENERAL */
 .modelos-container {
-  padding: 40px;
+  padding: 40px 40px 120px 40px;
 }
 
 /* OCULTAR MODELOS */
 .modelos {
   max-height: 0;
   overflow: hidden;
-  transition: all 0.5s ease;
+  transition: max-height 0.5s ease-in-out;
 }
 
 /* CUANDO SE ABRE */
 .modelos.activo {
-  max-height: 900px;
+  max-height: 2000px;
   margin-top: 20px;
+  padding-bottom: 60px;
 }
 
 /* GRID */
@@ -1895,3 +1896,134 @@ model-viewer{
   color: #888;
   margin: 0 0 6px 0;
 }
+
+/* =========================
+   RESPONSIVE: PÁGINAS DE DEPORTE
+   (soccer, basquetbol, voleibol)
+========================= */
+
+@media (max-width: 768px) {
+
+  /* Encabezado de sección */
+  .equipos-header {
+    font-size: 20px;
+    padding: 18px 16px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Contenedor de cards de categoría */
+  .equipos-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    margin: 32px auto;
+    padding: 0 16px;
+  }
+
+  /* Cada card de categoría (INFANTIL / DAMA / CABALLERO) */
+  .equipo-card {
+    width: 90%;
+    max-width: 360px;
+    padding: 20px 16px;
+  }
+
+  .equipo-card img {
+    height: 320px;
+  }
+
+  .equipo-card h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  /* Contenedor de la sección modelos */
+  .modelos-container {
+    padding: 20px 12px;
+  }
+
+  /* Grid de modelos de prendas */
+  .modelos-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* Cada tarjeta de modelo (Short / Playera / Conjunto) */
+  .modelo-card {
+    width: 90%;
+    max-width: 340px;
+  }
+
+  .modelo-card img {
+    height: 220px;
+    width: 100%;
+    object-fit: contain;
+  }
+
+  .modelo-card h4 {
+    font-size: 15px;
+  }
+
+  /* Título dentro de la sección modelos */
+  .modelos h2 {
+    text-align: center;
+    font-size: 20px;
+  }
+
+  /* Modal cotizador */
+  .modal-box {
+    width: 92%;
+    padding: 24px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .equipos-header {
+    font-size: 17px;
+    padding: 14px 12px;
+  }
+
+  .equipo-card {
+    width: 95%;
+  }
+
+  .equipo-card img {
+    height: 260px;
+  }
+
+  .modelo-card {
+    width: 95%;
+  }
+
+  .modelo-card img {
+    height: 190px;
+  }
+}
+
+/* ── Paletas de colores para texto y número ── */
+.palette-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+}
+.swatch:hover {
+  transform: scale(1.2);
+  border-color: #555;
+}
+.swatch.seleccionado {
+  border: 3px solid #222;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.3);
+}
+ 

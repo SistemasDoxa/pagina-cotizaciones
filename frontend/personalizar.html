@@ -134,7 +134,26 @@
       <small class="char-counter"><span id="charCount">0</span>/10 caracteres</small>
       <div id="colorTextoRow2">
         <label>Color del texto:</label>
-        <input type="color" id="colorTextoPicker2" value="#ffffff">
+        <div class="palette-picker" id="paletteTexto">
+          <div class="swatch seleccionado" data-target="colorTextoPicker2" data-color="#FFFFFF" style="background:#FFFFFF;" title="Blanco"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#009FE3" style="background:#009FE3;" title="Azul celeste"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#E6007E" style="background:#E6007E;" title="Rosa mexicano"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#FFED00" style="background:#FFED00;" title="Amarillo"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#312783" style="background:#312783;" title="Azul marino"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#1D1D1B" style="background:#1D1D1B;" title="Negro"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#009640" style="background:#009640;" title="Verde bandera"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#F18618" style="background:#F18618;" title="Anaranjado"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#E73344" style="background:#E73344;" title="Rojo"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#86BC25" style="background:#86BC25;" title="Verde hoja"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#8C8C8B" style="background:#8C8C8B;" title="Gris oxford"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#F08FBA" style="background:#F08FBA;" title="Rosa pastel"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#69C8F3" style="background:#69C8F3;" title="Azul cielo"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#006298" style="background:#006298;" title="Azul rey"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#ECA800" style="background:#ECA800;" title="Amarillo naranjoso"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#C9961A" style="background:#C9961A;" title="Ocre"></div>
+          <div class="swatch" data-target="colorTextoPicker2" data-color="#BFC2C5" style="background:#BFC2C5;" title="Gris claro"></div>
+        </div>
+        <input type="hidden" id="colorTextoPicker2" value="#FFFFFF">
       </div>
       <br>
       <button class="add-btn" id="btnAgregarTexto" onclick="activarModoTexto2()">Agregar texto</button>
@@ -146,7 +165,26 @@
       <input type="text" id="numeroInput" placeholder="Max. 2 digitos" maxlength="2" pattern="[0-9]*" inputmode="numeric">
       <div id="colorNumeroRow">
         <label>Color del numero:</label>
-        <input type="color" id="colorNumeroPicker" value="#ffffff">
+        <div class="palette-picker" id="paletteNumero">
+          <div class="swatch seleccionado" data-target="colorNumeroPicker" data-color="#FFFFFF" style="background:#FFFFFF;" title="Blanco"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#009FE3" style="background:#009FE3;" title="Azul celeste"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#E6007E" style="background:#E6007E;" title="Rosa mexicano"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#FFED00" style="background:#FFED00;" title="Amarillo"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#312783" style="background:#312783;" title="Azul marino"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#1D1D1B" style="background:#1D1D1B;" title="Negro"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#009640" style="background:#009640;" title="Verde bandera"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#F18618" style="background:#F18618;" title="Anaranjado"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#E73344" style="background:#E73344;" title="Rojo"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#86BC25" style="background:#86BC25;" title="Verde hoja"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#8C8C8B" style="background:#8C8C8B;" title="Gris oxford"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#F08FBA" style="background:#F08FBA;" title="Rosa pastel"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#69C8F3" style="background:#69C8F3;" title="Azul cielo"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#006298" style="background:#006298;" title="Azul rey"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#ECA800" style="background:#ECA800;" title="Amarillo naranjoso"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#C9961A" style="background:#C9961A;" title="Ocre"></div>
+          <div class="swatch" data-target="colorNumeroPicker" data-color="#BFC2C5" style="background:#BFC2C5;" title="Gris claro"></div>
+        </div>
+        <input type="hidden" id="colorNumeroPicker" value="#FFFFFF">
       </div>
       <br>
       <button class="add-btn" id="btnAgregarNumero" onclick="activarModoNumero()">Agregar numero</button>

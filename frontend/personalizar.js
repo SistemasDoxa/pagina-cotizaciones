@@ -806,3 +806,29 @@ window.cambiarPrenda     = cambiarPrenda;
 window.activarModoTexto2 = activarModoTexto2;
 window.activarModoNumero = activarModoNumero;
 window.irASiguiente      = irASiguiente;
+// ── Paletas de colores para texto y número ─────────────────────
+(function() {
+  function initPalette(paletteId) {
+    const palette = document.getElementById(paletteId);
+    if (!palette) return;
+    palette.addEventListener("click", function(e) {
+      const sw = e.target.closest(".swatch");
+      if (!sw) return;
+      const targetId = sw.dataset.target;
+      const color    = sw.dataset.color;
+      const input = document.getElementById(targetId);
+      if (input) input.value = color;
+      palette.querySelectorAll(".swatch").forEach(s => s.classList.remove("seleccionado"));
+      sw.classList.add("seleccionado");
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() {
+      initPalette("paletteTexto");
+      initPalette("paletteNumero");
+    });
+  } else {
+    initPalette("paletteTexto");
+    initPalette("paletteNumero");
+  }
+})();
