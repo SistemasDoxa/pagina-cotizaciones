@@ -31,6 +31,8 @@ document.querySelectorAll(".modelo-card").forEach(card => {
     document.getElementById("resultadoPrecio").style.display = "none";
     document.getElementById("precioError").style.display     = "none";
     document.getElementById("modalCotizador").style.display  = "flex";
+    // Deshabilitar "Personalizar" hasta que se consulte el precio
+    document.getElementById("btnPersonalizar").disabled = true;
   });
 });
 
@@ -75,6 +77,8 @@ document.getElementById("btnConsultarPrecio").addEventListener("click", async ()
         `Precio por pieza: $${resultado.precio.toFixed(2)}`;
       document.getElementById("precioNota").textContent =
         resultado.nota ? `* ${resultado.nota}` : "";
+      // Habilitar "Personalizar" ahora que hay un precio válido
+      document.getElementById("btnPersonalizar").disabled = false;
 
       const nombreConjunto = document.getElementById("modalTitulo").textContent.replace("Cotizar: ", "");
       sessionStorage.setItem("doxa_conjunto", JSON.stringify({

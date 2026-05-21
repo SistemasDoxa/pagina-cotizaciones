@@ -39,6 +39,8 @@ const estadoPrenda = {
   playera: {
     modelo:               null,   // THREE.Object3D cargado
     sprites:              [],     // [{ mesh }]
+    meshTexto:            null,   // mesh del texto activo
+    meshNumero:           null,   // mesh del numero activo
     textoColocado:        false,
     numeroColocado:       false,
     colorHex:             null,   // color aplicado (o null = original)
@@ -46,6 +48,8 @@ const estadoPrenda = {
   short: {
     modelo:               null,
     sprites:              [],
+    meshTexto:            null,
+    meshNumero:           null,
     textoColocado:        false,
     numeroColocado:       false,
     colorHex:             null,
@@ -95,10 +99,19 @@ function iniciarApp() {
 
   configurarEditor();
 
-  canvas.addEventListener("click",     onCanvasClick);
-  canvas.addEventListener("mousemove", onCanvasMouseMove);
-  canvas.addEventListener("mouseup",   onCanvasMouseUp);
-  window.addEventListener("resize",    ajustarTamano);
+  canvas.addEventListener("click",      onCanvasClick);
+  canvas.addEventListener("mousemove",  onCanvasMouseMove);
+  canvas.addEventListener("mouseup",    onCanvasMouseUp);
+  window.addEventListener("resize",     ajustarTamano);
+
+  // En móvil usamos un overlay transparente encima del canvas
+  // para capturar toques SIN interferir con OrbitControls
+  const overlay = document.getElementById("touchOverlay");
+  if (overlay) {
+    overlay.addEventListener("touchstart", onOverlayTouchStart, { passive: false });
+    overlay.addEventListener("touchmove",  onOverlayTouchMove,  { passive: false });
+    overlay.addEventListener("touchend",   onOverlayTouchEnd,   { passive: false });
+  }
 
   (function loop() {
     requestAnimationFrame(loop);
@@ -366,7 +379,121 @@ function onCanvasMouseUp() {
   }
 }
 
-// ── Selección ─────────────────────────────────────────────────
+// ── Touch handlers (móvil) ───────────────────────────────────
+// En móvil texto/número/logo se colocan AUTOMÁTICAMENTE.
+// El toque solo sirve para:
+//   1. Rotar el modelo (OrbitControls — comportamiento por defecto)
+//   2. Tap sobre un sprite existente → seleccionarlo (panel flotante)
+//   3. Arrastrar un sprite seleccionado → moverlo sobre la prenda
+//
+// Estrategia:
+//   - touchstart/move/end en el OVERLAY (z-index 25, encima del canvas)
+//   - Si NO hay sprite que mover: re-enviamos al canvas para que
+//     OrbitControls rote normalmente (sin bloquear)
+//   - Si hay sprite en modo mover: consumimos el evento y movemos el sprite
+
+let _touchStartX = 0, _touchStartY = 0, _touchStartTime = 0, _touchMoved = false;
+
+// Re-envía un evento de toque al canvas para que OrbitControls lo procese
+function _pasarTouchAOrbit(e, tipo) {
+  try {
+    const canvas = document.getElementById("threeCanvas");
+    canvas.dispatchEvent(new TouchEvent(tipo, {
+      bubbles: true, cancelable: true,
+      touches:        e.touches,
+      targetTouches:  e.targetTouches,
+      changedTouches: e.changedTouches,
+    }));
+  } catch(_) {}
+}
+
+function onOverlayTouchStart(e) {
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  _touchStartX    = t.clientX;
+  _touchStartY    = t.clientY;
+  _touchStartTime = Date.now();
+  _touchMoved     = false;
+
+  if (modoMover && spriteSeleccionado) {
+    // Modo arrastre activo: consumir completamente para que OrbitControls no rote
+    e.preventDefault();
+    e.stopPropagation();
+  } else {
+    // Modo normal: dejar pasar a OrbitControls para que rote el modelo
+    _pasarTouchAOrbit(e, "touchstart");
+  }
+}
+
+function onOverlayTouchMove(e) {
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const dx = t.clientX - _touchStartX;
+  const dy = t.clientY - _touchStartY;
+  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) _touchMoved = true;
+
+  if (modoMover && spriteSeleccionado) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Mover el sprite y re-orientarlo a la nueva superficie
+    const hit = raycastModelo(t.clientX, t.clientY);
+    if (hit) {
+      const normal = hit.face.normal.clone()
+        .transformDirection(hit.object.matrixWorld).normalize();
+      spriteSeleccionado.userData.surfaceNormal = normal.clone();
+      const up = Math.abs(normal.y) < 0.99
+        ? new THREE.Vector3(0, 1, 0)
+        : new THREE.Vector3(0, 0, 1);
+      const tangent   = new THREE.Vector3().crossVectors(up, normal).normalize();
+      const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+      spriteSeleccionado.quaternion.setFromRotationMatrix(
+        new THREE.Matrix4().makeBasis(tangent, bitangent, normal)
+      );
+      spriteSeleccionado.position.copy(hit.point).addScaledVector(normal, 0.015);
+    }
+  } else {
+    // Pasar a OrbitControls para rotar el modelo
+    _pasarTouchAOrbit(e, "touchmove");
+  }
+}
+
+function onOverlayTouchEnd(e) {
+  // Terminar modo mover
+  if (modoMover) {
+    modoMover = false;
+    controls.enabled = true;
+    ocultarIndicador();
+    e.preventDefault();
+    _pasarTouchAOrbit(e, "touchend");
+    return;
+  }
+
+  // Pasar fin de gesto a OrbitControls
+  _pasarTouchAOrbit(e, "touchend");
+
+  // Solo procesar tap rápido sin movimiento
+  const duracion = Date.now() - _touchStartTime;
+  if (_touchMoved || duracion > 350) return;
+  if (e.changedTouches.length !== 1) return;
+
+  const t = e.changedTouches[0];
+
+  // Intentar seleccionar un sprite existente con tap
+  const left = document.getElementById("editorLeft");
+  const rect  = left.getBoundingClientRect();
+  mouse2D.x =  ((t.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse2D.y = -((t.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse2D, camera);
+  const hits = raycaster.intersectObjects(estado().sprites.map(s => s.mesh));
+  if (hits.length) {
+    const clicked = hits[0].object;
+    clicked === spriteSeleccionado ? deseleccionar() : seleccionar(clicked, t.clientX, t.clientY);
+  } else {
+    deseleccionar();
+  }
+}
+
+
 function seleccionar(sprite, cx, cy) {
   spriteSeleccionado = sprite;
   document.getElementById("pfSlider").value = sprite.userData.escalaBase || 1;
@@ -423,15 +550,17 @@ function finalizarModoColocar() {
 }
 
 // ── Panel flotante — acciones ─────────────────────────────────
-document.getElementById("pfBtnMover").addEventListener("mousedown", (e) => {
+function activarModoMover(e) {
   e.preventDefault();
   if (!spriteSeleccionado) return;
   modoMover = true;
-  controls.enabled = false;
+  controls.enabled = false; // desactivar rotación mientras movemos
   document.getElementById("threeCanvas").style.cursor = "grabbing";
   mostrarIndicador("🖐 Arrastra sobre la prenda — suelta para fijar");
   ocultarPanel();
-});
+}
+document.getElementById("pfBtnMover").addEventListener("mousedown",  activarModoMover);
+document.getElementById("pfBtnMover").addEventListener("touchstart", activarModoMover, { passive: false });
 
 document.getElementById("pfSlider").addEventListener("input", () => {
   if (!spriteSeleccionado) return;
@@ -500,41 +629,235 @@ function actualizarBadge(tipo, colocado) {
   }
 }
 
-// ── Tab TEXTO ─────────────────────────────────────────────────
-function activarModoTexto2() {
-  if (estado().textoColocado) { alert("Ya hay un texto en esta prenda. Eliminalo primero."); return; }
+// ── Tabs del panel ────────────────────────────────────────────
+const editorRight = document.querySelector(".editor-right");
+
+document.querySelectorAll(".panel-tabs .tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tabId = btn.dataset.tab;
+    document.querySelectorAll(".panel-tabs .tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + tabId).classList.add("active");
+    if (tabId === "texto")  onEntrarTabTexto();
+    if (tabId === "numero") onEntrarTabNumero();
+  });
+});
+
+document.getElementById("threeCanvas").addEventListener("click", () => {
+  // En móvil el panel es fijo, no se colapsa al tocar el canvas
+});
+
+// ── Auto-colocacion: posiciones default (raycast frontal) ─────
+const POS_DEFAULT_TEXTO  = { x: 0,    y: 0.12 };
+const POS_DEFAULT_NUMERO = { x: 0,    y: -0.05 };
+
+function colocarEnPosDefault(mesh, pos) {
+  const origen = new THREE.Vector3(pos.x, pos.y, 2);
+  const dir    = new THREE.Vector3(0, 0, -1);
+  const rc     = new THREE.Raycaster(origen, dir);
+  const modelo = estado().modelo;
+  if (!modelo) return;
+  const hits = rc.intersectObjects(modelo.userData.meshes || [], true);
+  if (hits.length) {
+    orientarPlano(mesh, hits[0]);
+  } else {
+    mesh.position.set(pos.x, pos.y, 0.5);
+    mesh.lookAt(camera.position);
+  }
+  mesh.scale.setScalar(1);
+  scene.add(mesh);
+  estado().sprites.push({ mesh });
+}
+
+function onEntrarTabTexto() {
+  const est = estado();
+  if (est.meshTexto) { sincronizarUITexto(); return; }
   const texto = document.getElementById("textoInput2").value.trim();
-  if (!texto) { alert("Escribe un texto primero."); return; }
-  const color = document.getElementById("colorTextoPicker2").value;
-  modoColocar = "texto";
-  pendingData = { texto, color, subtipo: "texto" };
-  controls.enabled = false;
-  document.getElementById("threeCanvas").style.cursor = "crosshair";
-  mostrarIndicador("👆 Haz clic en la prenda para posicionar el texto");
+  if (texto) colocarTextoAuto();
+}
+
+function onEntrarTabNumero() {
+  const est = estado();
+  if (est.meshNumero) { sincronizarUINumero(); return; }
+  const num = document.getElementById("numeroInput").value.trim();
+  if (num) colocarNumeroAuto();
+}
+
+function colocarTextoAuto() {
+  const est   = estado();
+  const texto = document.getElementById("textoInput2").value.trim();
+  const color = colorTextoActual();
+  if (!texto) return;
+  if (est.meshTexto) {
+    scene.remove(est.meshTexto);
+    est.sprites = est.sprites.filter(s => s.mesh !== est.meshTexto);
+    est.meshTexto = null;
+  }
+  if (!est.modelo) { setTimeout(colocarTextoAuto, 150); return; }
+  const mesh = crearMeshTexto(texto, color);
+  mesh.userData.subtipo = "texto";
+  colocarEnPosDefault(mesh, POS_DEFAULT_TEXTO);
+  est.meshTexto     = mesh;
+  est.textoColocado = true;
+  sincronizarUITexto();
+}
+
+function colocarNumeroAuto() {
+  const est   = estado();
+  const num   = document.getElementById("numeroInput").value.trim();
+  const color = colorNumeroActual();
+  if (!num || !/^\d{1,2}$/.test(num)) return;
+  if (est.meshNumero) {
+    scene.remove(est.meshNumero);
+    est.sprites = est.sprites.filter(s => s.mesh !== est.meshNumero);
+    est.meshNumero = null;
+  }
+  if (!est.modelo) { setTimeout(colocarNumeroAuto, 150); return; }
+  const mesh = crearMeshTexto(num, color);
+  mesh.userData.subtipo = "numero";
+  colocarEnPosDefault(mesh, POS_DEFAULT_NUMERO);
+  est.meshNumero     = mesh;
+  est.numeroColocado = true;
+  sincronizarUINumero();
+}
+
+function actualizarTexturaMesh(mesh, texto, color) {
+  const tex = canvasTextoTextura(texto, color);
+  mesh.material.map = tex;
+  mesh.material.needsUpdate = true;
+}
+
+function colorTextoActual() {
+  const sw = document.querySelector("#paletteTexto .swatch.seleccionado");
+  return sw ? sw.dataset.color : "#FFFFFF";
+}
+function colorNumeroActual() {
+  const sw = document.querySelector("#paletteNumero .swatch.seleccionado");
+  return sw ? sw.dataset.color : "#FFFFFF";
+}
+
+function sincronizarUITexto() {
+  const est  = estado();
+  const acc  = document.getElementById("texto-acciones");
+  const help = document.getElementById("textoHelpText");
+  if (acc) {
+    acc.style.display = est.meshTexto ? "flex" : "none";
+    if (est.meshTexto) acc.style.flexDirection = "column";
+  }
+  if (help) help.textContent = est.meshTexto
+    ? "Edita el texto o color — se actualiza en tiempo real"
+    : "Escribe un texto — aparecerá en la prenda automáticamente";
+}
+function sincronizarUINumero() {
+  const est  = estado();
+  const acc  = document.getElementById("numero-acciones");
+  const help = document.getElementById("numeroHelpText");
+  if (acc) {
+    acc.style.display = est.meshNumero ? "flex" : "none";
+    if (est.meshNumero) acc.style.flexDirection = "column";
+  }
+  if (help) help.textContent = est.meshNumero
+    ? "Edita el número o color — se actualiza en tiempo real"
+    : "Escribe un número — aparecerá en la prenda automáticamente";
 }
 
 document.getElementById("textoInput2").addEventListener("input", () => {
-  document.getElementById("charCount").textContent =
-    document.getElementById("textoInput2").value.length;
+  const texto = document.getElementById("textoInput2").value;
+  document.getElementById("charCount").textContent = texto.length;
+  const est = estado();
+  const tabActiva = document.querySelector(".tab[data-tab='texto']")?.classList.contains("active");
+  if (!tabActiva) return;
+  if (!texto.trim()) {
+    if (est.meshTexto) {
+      scene.remove(est.meshTexto);
+      est.sprites = est.sprites.filter(s => s.mesh !== est.meshTexto);
+      est.meshTexto = null; est.textoColocado = false;
+      sincronizarUITexto();
+    }
+    return;
+  }
+  if (est.meshTexto) actualizarTexturaMesh(est.meshTexto, texto.trim(), colorTextoActual());
+  else colocarTextoAuto();
 });
-
-// ── Tab NUMERO ────────────────────────────────────────────────
-function activarModoNumero() {
-  if (estado().numeroColocado) { alert("Ya hay un número en esta prenda. Eliminalo primero."); return; }
-  const num = document.getElementById("numeroInput").value.trim();
-  if (!num) { alert("Escribe un número primero."); return; }
-  if (!/^\d{1,2}$/.test(num)) { alert("Solo se permiten 1 o 2 dígitos numéricos."); return; }
-  const color = document.getElementById("colorNumeroPicker").value;
-  modoColocar = "texto";
-  pendingData = { texto: num, color, subtipo: "numero" };
-  controls.enabled = false;
-  document.getElementById("threeCanvas").style.cursor = "crosshair";
-  mostrarIndicador("👆 Haz clic en la prenda para posicionar el número");
-}
 
 document.getElementById("numeroInput").addEventListener("input", () => {
   const el = document.getElementById("numeroInput");
   el.value = el.value.replace(/\D/g, "").slice(0, 2);
+  const num = el.value.trim();
+  const est = estado();
+  const tabActiva = document.querySelector(".tab[data-tab='numero']")?.classList.contains("active");
+  if (!tabActiva) return;
+  if (!num) {
+    if (est.meshNumero) {
+      scene.remove(est.meshNumero);
+      est.sprites = est.sprites.filter(s => s.mesh !== est.meshNumero);
+      est.meshNumero = null; est.numeroColocado = false;
+      sincronizarUINumero();
+    }
+    return;
+  }
+  if (est.meshNumero) actualizarTexturaMesh(est.meshNumero, num, colorNumeroActual());
+  else colocarNumeroAuto();
+});
+
+document.getElementById("paletteTexto").addEventListener("click", (e) => {
+  const sw = e.target.closest(".swatch");
+  if (!sw) return;
+  document.querySelectorAll("#paletteTexto .swatch").forEach(s => s.classList.remove("seleccionado"));
+  sw.classList.add("seleccionado");
+  const est = estado();
+  if (est.meshTexto) actualizarTexturaMesh(est.meshTexto, document.getElementById("textoInput2").value.trim(), sw.dataset.color);
+});
+
+document.getElementById("paletteNumero").addEventListener("click", (e) => {
+  const sw = e.target.closest(".swatch");
+  if (!sw) return;
+  document.querySelectorAll("#paletteNumero .swatch").forEach(s => s.classList.remove("seleccionado"));
+  sw.classList.add("seleccionado");
+  const est = estado();
+  if (est.meshNumero) actualizarTexturaMesh(est.meshNumero, document.getElementById("numeroInput").value.trim(), sw.dataset.color);
+});
+
+document.getElementById("btnMoverTexto")?.addEventListener("click", () => {
+  const est = estado();
+  if (!est.meshTexto) return;
+  spriteSeleccionado = est.meshTexto;
+  modoMover = true; controls.enabled = false;
+  document.getElementById("threeCanvas").style.cursor = "crosshair";
+  mostrarIndicador("👆 Toca la prenda para reubicar el texto");
+  // panel siempre visible en móvil
+});
+
+document.getElementById("btnMoverNumero")?.addEventListener("click", () => {
+  const est = estado();
+  if (!est.meshNumero) return;
+  spriteSeleccionado = est.meshNumero;
+  modoMover = true; controls.enabled = false;
+  document.getElementById("threeCanvas").style.cursor = "crosshair";
+  mostrarIndicador("👆 Toca la prenda para reubicar el número");
+  // panel siempre visible en móvil
+});
+
+document.getElementById("btnEliminarTexto")?.addEventListener("click", () => {
+  const est = estado();
+  if (!est.meshTexto) return;
+  scene.remove(est.meshTexto);
+  est.sprites = est.sprites.filter(s => s.mesh !== est.meshTexto);
+  est.meshTexto = null; est.textoColocado = false;
+  document.getElementById("textoInput2").value = "";
+  document.getElementById("charCount").textContent = "0";
+  sincronizarUITexto();
+});
+
+document.getElementById("btnEliminarNumero")?.addEventListener("click", () => {
+  const est = estado();
+  if (!est.meshNumero) return;
+  scene.remove(est.meshNumero);
+  est.sprites = est.sprites.filter(s => s.mesh !== est.meshNumero);
+  est.meshNumero = null; est.numeroColocado = false;
+  document.getElementById("numeroInput").value = "";
+  sincronizarUINumero();
 });
 
 // ── Tab LOGO ──────────────────────────────────────────────────
@@ -545,23 +868,23 @@ document.getElementById("logoInput2").addEventListener("change", (e) => {
   reader.onload = (ev) => {
     const base64Url = ev.target.result;
     sessionStorage.setItem("doxa_logo", base64Url);
-    modoColocar = "logo";
-    pendingData  = { url: base64Url };
-    controls.enabled = false;
-    document.getElementById("threeCanvas").style.cursor = "crosshair";
-    mostrarIndicador("👆 Haz clic en la prenda para posicionar la imagen");
+    if (window.innerWidth <= 768) {
+      // En móvil: colocar logo automáticamente en posición frontal
+      crearMeshImagen(base64Url).then(mesh => {
+        mesh.userData.subtipo = "logo";
+        if (!estado().modelo) { setTimeout(() => colocarEnPosDefault(mesh, { x: 0.15, y: 0.05 }), 150); }
+        else { colocarEnPosDefault(mesh, { x: 0.15, y: 0.05 }); }
+        // panel siempre visible en móvil
+      });
+    } else {
+      // En desktop: modo clic para posicionar manualmente
+      modoColocar = "logo"; pendingData = { url: base64Url };
+      controls.enabled = false;
+      document.getElementById("threeCanvas").style.cursor = "crosshair";
+      mostrarIndicador("👆 Haz clic en la prenda para posicionar la imagen");
+    }
   };
   reader.readAsDataURL(file);
-});
-
-// ── Tabs del panel ────────────────────────────────────────────
-document.querySelectorAll(".panel-tabs .tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".panel-tabs .tab").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-  });
 });
 
 // ── Cargar resumen del conjunto ───────────────────────────────
@@ -801,34 +1124,7 @@ async function irASiguiente() {
 }
 
 // ── Exponer para botones inline del HTML ──────────────────────
-window.zoomCamara        = zoomCamara;
-window.cambiarPrenda     = cambiarPrenda;
-window.activarModoTexto2 = activarModoTexto2;
-window.activarModoNumero = activarModoNumero;
-window.irASiguiente      = irASiguiente;
-// ── Paletas de colores para texto y número ─────────────────────
-(function() {
-  function initPalette(paletteId) {
-    const palette = document.getElementById(paletteId);
-    if (!palette) return;
-    palette.addEventListener("click", function(e) {
-      const sw = e.target.closest(".swatch");
-      if (!sw) return;
-      const targetId = sw.dataset.target;
-      const color    = sw.dataset.color;
-      const input = document.getElementById(targetId);
-      if (input) input.value = color;
-      palette.querySelectorAll(".swatch").forEach(s => s.classList.remove("seleccionado"));
-      sw.classList.add("seleccionado");
-    });
-  }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function() {
-      initPalette("paletteTexto");
-      initPalette("paletteNumero");
-    });
-  } else {
-    initPalette("paletteTexto");
-    initPalette("paletteNumero");
-  }
-})();
+window.zoomCamara    = zoomCamara;
+window.cambiarPrenda = cambiarPrenda;
+window.irASiguiente  = irASiguiente;
+

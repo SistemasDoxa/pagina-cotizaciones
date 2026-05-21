@@ -34,7 +34,7 @@ const iconoDoxa = L.divIcon({
 const ubicaciones = [
   { id: "morelos",  nombre: "Doxa Morelos",   coords: [19.28799,  -99.655315] },
   { id: "villada",  nombre: "Doxa Villada",   coords: [19.287962, -99.658371] },
-  { id: "plazamia", nombre: "Doxa Plaza Mia", coords: [19.292569, -99.735500] }
+  { id: "plazamia", nombre: "Doxa Plaza Mia Zinacantepec", coords: [19.292569, -99.735500] }
 ];
 
 // Crear marcadores y guardar referencia por id
