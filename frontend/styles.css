@@ -2204,7 +2204,7 @@ model-viewer{
     bottom: 10px;
     flex-direction: column;
     gap: 6px;
-    z-index: 20;
+    z-index: 30; /* encima del overlay (z-index:25) */
   }
   .zoom-controls button {
     width: 36px;
@@ -2214,6 +2214,8 @@ model-viewer{
     background: #fff;
     border: 1px solid #ccc;
     box-shadow: 0 2px 6px rgba(0,0,0,.18);
+    touch-action: manipulation;
+    cursor: pointer;
   }
 
   /* Barra Playera/Short dentro del visor */
@@ -2423,7 +2425,7 @@ model-viewer{
 #touchOverlay {
   display: none;
 }
-
+ 
 @media (max-width: 768px) {
   #touchOverlay {
     display: block;
@@ -2433,16 +2435,24 @@ model-viewer{
     background: transparent;
     touch-action: none;
   }
-
-  /* En móvil el panelFlotante usa fixed para salir del overflow:hidden del editor-left */
+ 
+  /* En móvil: fixed — posición y ancho los calcula JS (mostrarPanel) */
   #panelFlotante {
     position: fixed !important;
-    top: 80px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
     right: unset !important;
     bottom: unset !important;
-    min-width: 220px;
     z-index: 500 !important;
+    box-sizing: border-box !important;
+    padding: 8px 10px !important;
+    touch-action: auto !important;
+    pointer-events: auto !important;
   }
+  #panelFlotante button {
+    font-size: 11px !important;
+    padding: 7px 0 !important;
+    touch-action: manipulation !important;
+    pointer-events: auto !important;
+  }
+  #panelFlotante label { font-size: 10px !important; }
+  #panelFlotante input[type=range] { touch-action: pan-x !important; }
 }

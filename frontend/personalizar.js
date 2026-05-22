@@ -99,13 +99,21 @@ function iniciarApp() {
 
   configurarEditor();
 
-  canvas.addEventListener("click",      onCanvasClick);
-  canvas.addEventListener("mousemove",  onCanvasMouseMove);
-  canvas.addEventListener("mouseup",    onCanvasMouseUp);
-  window.addEventListener("resize",     ajustarTamano);
+  // Desktop: click simple rota/cierra, doble click abre panel
+  canvas.addEventListener("click",     onCanvasClick);
+  canvas.addEventListener("dblclick",  onCanvasDblClick);
+  canvas.addEventListener("mousemove", onCanvasMouseMove);
+  canvas.addEventListener("mouseup",   onCanvasMouseUp);
+  window.addEventListener("resize",    ajustarTamano);
 
-  // En móvil usamos un overlay transparente encima del canvas
-  // para capturar toques SIN interferir con OrbitControls
+  // Desktop: cerrar panel al hacer click fuera (NO en móvil — lo maneja el overlay)
+  document.addEventListener("mousedown", e => {
+    const pf = document.getElementById("panelFlotante");
+    if (pf.style.display === "none") return;
+    if (!pf.contains(e.target)) deseleccionar();
+  });
+
+  // Móvil: overlay captura todos los toques
   const overlay = document.getElementById("touchOverlay");
   if (overlay) {
     overlay.addEventListener("touchstart", onOverlayTouchStart, { passive: false });
@@ -113,12 +121,14 @@ function iniciarApp() {
     overlay.addEventListener("touchend",   onOverlayTouchEnd,   { passive: false });
   }
 
+  // Cerrar panel al tocar fuera en móvil — se registra en el panel flotante mismo
+  // para no interferir con el overlay (ver _cerrarPanelConTouch al final del archivo)
+
   (function loop() {
     requestAnimationFrame(loop);
-    if (capturandoVistas) return;  // pausar mientras se capturan vistas para el PDF
+    if (capturandoVistas) return;
     controls.update();
     renderer.render(scene, camera);
-    if (spriteSeleccionado) actualizarPosPanel();
   })();
 
   conectarUI();
@@ -322,29 +332,37 @@ function onCanvasClick(e) {
   if (modoColocar) {
     const hit = raycastModelo(e.clientX, e.clientY);
     if (!hit) { mostrarIndicador("⚠ Haz clic sobre la prenda"); return; }
-
     if (modoColocar === "texto") {
       const mesh = crearMeshTexto(pendingData.texto, pendingData.color);
       mesh.userData.subtipo = pendingData.subtipo || "texto";
       colocarSprite(mesh, hit);
       if (pendingData.subtipo === "numero") {
-        estado().numeroColocado = true;
-        actualizarBadge("numero", true);
+        estado().numeroColocado = true; actualizarBadge("numero", true);
       } else {
-        estado().textoColocado = true;
-        actualizarBadge("texto", true);
+        estado().textoColocado = true;  actualizarBadge("texto",  true);
       }
       finalizarModoColocar();
     } else {
       crearMeshImagen(pendingData.url).then(mesh => {
-        colocarSprite(mesh, hit);
-        finalizarModoColocar();
+        colocarSprite(mesh, hit); finalizarModoColocar();
       });
     }
     return;
   }
 
-  // Seleccionar decal existente
+  // Click simple: solo cierra el panel si hay uno abierto y se hizo clic fuera de un sprite
+  const left = document.getElementById("editorLeft");
+  const rect = left.getBoundingClientRect();
+  mouse2D.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse2D.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse2D, camera);
+  const hits = raycaster.intersectObjects(estado().sprites.map(s => s.mesh));
+  if (!hits.length) deseleccionar();
+}
+
+// Doble click: abre el panel flotante sobre el sprite
+function onCanvasDblClick(e) {
+  if (moviendo) return;
   const left = document.getElementById("editorLeft");
   const rect = left.getBoundingClientRect();
   mouse2D.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
@@ -353,9 +371,7 @@ function onCanvasClick(e) {
   const hits = raycaster.intersectObjects(estado().sprites.map(s => s.mesh));
   if (hits.length) {
     const clicked = hits[0].object;
-    clicked === spriteSeleccionado ? deseleccionar() : seleccionar(clicked, e.clientX, e.clientY);
-  } else {
-    deseleccionar();
+    seleccionar(clicked, e.clientX, e.clientY);
   }
 }
 
@@ -364,9 +380,17 @@ function onCanvasMouseMove(e) {
   moviendo = true;
   const hit = raycastModelo(e.clientX, e.clientY);
   if (hit) {
-    const offset = hit.face.normal.clone()
-      .transformDirection(hit.object.matrixWorld).multiplyScalar(0.012);
-    spriteSeleccionado.position.copy(hit.point).add(offset);
+    const normal = hit.face.normal.clone()
+      .transformDirection(hit.object.matrixWorld).normalize();
+    spriteSeleccionado.userData.surfaceNormal = normal.clone();
+    const up = Math.abs(normal.y) < 0.99
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(0, 0, 1);
+    const tangent   = new THREE.Vector3().crossVectors(up, normal).normalize();
+    const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+    spriteSeleccionado.quaternion.setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(tangent, bitangent, normal));
+    spriteSeleccionado.position.copy(hit.point).addScaledVector(normal, 0.015);
   }
 }
 
@@ -380,47 +404,69 @@ function onCanvasMouseUp() {
 }
 
 // ── Touch handlers (móvil) ───────────────────────────────────
-// En móvil texto/número/logo se colocan AUTOMÁTICAMENTE.
-// El toque solo sirve para:
-//   1. Rotar el modelo (OrbitControls — comportamiento por defecto)
-//   2. Tap sobre un sprite existente → seleccionarlo (panel flotante)
-//   3. Arrastrar un sprite seleccionado → moverlo sobre la prenda
-//
-// Estrategia:
-//   - touchstart/move/end en el OVERLAY (z-index 25, encima del canvas)
-//   - Si NO hay sprite que mover: re-enviamos al canvas para que
-//     OrbitControls rote normalmente (sin bloquear)
-//   - Si hay sprite en modo mover: consumimos el evento y movemos el sprite
+// Lógica:
+//   - 1 toque normal  → rota el modelo (OrbitControls)
+//   - Doble tap sobre texto/número/logo → abre panel flotante
+//   - Tap fuera del panel (o fuera de sprites) → cierra panel
+//   - Panel abierto + botón ✥ Mover → arrastra el sprite
 
 let _touchStartX = 0, _touchStartY = 0, _touchStartTime = 0, _touchMoved = false;
+let _lastTapTime = 0, _lastTapX = 0, _lastTapY = 0;
 
-// Re-envía un evento de toque al canvas para que OrbitControls lo procese
+// Reenvía el evento al canvas para que OrbitControls lo reciba
 function _pasarTouchAOrbit(e, tipo) {
   try {
-    const canvas = document.getElementById("threeCanvas");
-    canvas.dispatchEvent(new TouchEvent(tipo, {
+    document.getElementById("threeCanvas").dispatchEvent(new TouchEvent(tipo, {
       bubbles: true, cancelable: true,
-      touches:        e.touches,
-      targetTouches:  e.targetTouches,
-      changedTouches: e.changedTouches,
+      touches: e.touches, targetTouches: e.targetTouches, changedTouches: e.changedTouches,
     }));
   } catch(_) {}
+}
+
+// Raycast rápido desde coordenadas de toque
+function _raycastSprites(clientX, clientY) {
+  const left = document.getElementById("editorLeft");
+  const rect = left.getBoundingClientRect();
+  mouse2D.x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse2D.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse2D, camera);
+  return raycaster.intersectObjects(estado().sprites.map(s => s.mesh));
+}
+
+// Devuelve true si (cx,cy) está sobre un elemento de UI que el overlay
+// NO debe interceptar: panel flotante, botones de zoom, barra Playera/Short
+function _tocaElementoUI(cx, cy) {
+  const pf = document.getElementById("panelFlotante");
+  if (pf && pf.style.display !== "none") {
+    const r = pf.getBoundingClientRect();
+    if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) return true;
+  }
+  for (const sel of [".zoom-controls", ".viewer-bottom-bar"]) {
+    const el = document.querySelector(sel);
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) return true;
+  }
+  return false;
 }
 
 function onOverlayTouchStart(e) {
   if (e.touches.length !== 1) return;
   const t = e.touches[0];
+  // Si el toque es sobre UI (panel, zoom, barra) → no interceptar
+  if (_tocaElementoUI(t.clientX, t.clientY)) return;
+  
   _touchStartX    = t.clientX;
   _touchStartY    = t.clientY;
   _touchStartTime = Date.now();
   _touchMoved     = false;
 
+  // Evita el comportamiento por defecto y los eventos fantasma de click/mousedown
+  e.preventDefault();
+
   if (modoMover && spriteSeleccionado) {
-    // Modo arrastre activo: consumir completamente para que OrbitControls no rote
-    e.preventDefault();
     e.stopPropagation();
   } else {
-    // Modo normal: dejar pasar a OrbitControls para que rote el modelo
     _pasarTouchAOrbit(e, "touchstart");
   }
 }
@@ -428,67 +474,74 @@ function onOverlayTouchStart(e) {
 function onOverlayTouchMove(e) {
   if (e.touches.length !== 1) return;
   const t = e.touches[0];
-  const dx = t.clientX - _touchStartX;
-  const dy = t.clientY - _touchStartY;
-  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) _touchMoved = true;
+  if (_tocaElementoUI(t.clientX, t.clientY)) return;
+  
+  if (Math.abs(t.clientX - _touchStartX) > 8 ||
+      Math.abs(t.clientY - _touchStartY) > 8) _touchMoved = true;
+
+  // Evita que la pantalla haga scroll vertical al arrastrar el dedo en el canvas
+  e.preventDefault();
 
   if (modoMover && spriteSeleccionado) {
-    e.preventDefault();
     e.stopPropagation();
-    // Mover el sprite y re-orientarlo a la nueva superficie
     const hit = raycastModelo(t.clientX, t.clientY);
     if (hit) {
       const normal = hit.face.normal.clone()
         .transformDirection(hit.object.matrixWorld).normalize();
       spriteSeleccionado.userData.surfaceNormal = normal.clone();
       const up = Math.abs(normal.y) < 0.99
-        ? new THREE.Vector3(0, 1, 0)
-        : new THREE.Vector3(0, 0, 1);
+        ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
       const tangent   = new THREE.Vector3().crossVectors(up, normal).normalize();
       const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
       spriteSeleccionado.quaternion.setFromRotationMatrix(
-        new THREE.Matrix4().makeBasis(tangent, bitangent, normal)
-      );
+        new THREE.Matrix4().makeBasis(tangent, bitangent, normal));
       spriteSeleccionado.position.copy(hit.point).addScaledVector(normal, 0.015);
     }
   } else {
-    // Pasar a OrbitControls para rotar el modelo
     _pasarTouchAOrbit(e, "touchmove");
   }
 }
 
 function onOverlayTouchEnd(e) {
-  // Terminar modo mover
+  if (e.changedTouches.length !== 1) return;
+  const t = e.changedTouches[0];
+
+  // Si el toque terminó sobre UI → no interceptar, el elemento recibe el tap
+  if (_tocaElementoUI(t.clientX, t.clientY)) return;
+
+  // Evita que el navegador móvil dispare el evento mousedown/click emulado
+  e.preventDefault();
+
+  // Fin de arrastre de sprite
   if (modoMover) {
     modoMover = false;
     controls.enabled = true;
     ocultarIndicador();
-    e.preventDefault();
     _pasarTouchAOrbit(e, "touchend");
     return;
   }
 
-  // Pasar fin de gesto a OrbitControls
   _pasarTouchAOrbit(e, "touchend");
 
-  // Solo procesar tap rápido sin movimiento
   const duracion = Date.now() - _touchStartTime;
   if (_touchMoved || duracion > 350) return;
-  if (e.changedTouches.length !== 1) return;
 
-  const t = e.changedTouches[0];
+  const ahora      = Date.now();
+  const esDobleTap = (ahora - _lastTapTime) < 300 &&
+                     Math.abs(t.clientX - _lastTapX) < 40 &&
+                     Math.abs(t.clientY - _lastTapY) < 40;
+  _lastTapTime = ahora;
+  _lastTapX    = t.clientX;
+  _lastTapY    = t.clientY;
 
-  // Intentar seleccionar un sprite existente con tap
-  const left = document.getElementById("editorLeft");
-  const rect  = left.getBoundingClientRect();
-  mouse2D.x =  ((t.clientX - rect.left) / rect.width)  * 2 - 1;
-  mouse2D.y = -((t.clientY - rect.top)  / rect.height) * 2 + 1;
-  raycaster.setFromCamera(mouse2D, camera);
-  const hits = raycaster.intersectObjects(estado().sprites.map(s => s.mesh));
-  if (hits.length) {
-    const clicked = hits[0].object;
-    clicked === spriteSeleccionado ? deseleccionar() : seleccionar(clicked, t.clientX, t.clientY);
-  } else {
+  const pf   = document.getElementById("panelFlotante");
+  const hits = _raycastSprites(t.clientX, t.clientY);
+
+  if (esDobleTap && hits.length) {
+    // Doble tap sobre sprite → abrir panel flotante
+    seleccionar(hits[0].object, t.clientX, t.clientY);
+  } else if (pf.style.display !== "none") {
+    // Tap fuera del panel → cerrarlo
     deseleccionar();
   }
 }
@@ -505,18 +558,63 @@ function deseleccionar() {
 }
 
 // ── Panel flotante ────────────────────────────────────────────
+// Posiciona el panel al lado del sprite proyectando su centro 3D a pantalla.
+// Se adapta para no salirse del visor en ningún tamaño de pantalla.
+function _posicionarPanel(pf, rect, sx, sy) {
+  const pw     = parseFloat(pf.style.width) || pf.offsetWidth || 150;
+  const ph     = 115; // altura estimada (3 elementos)
+  const margen = 10;
+
+  // Derecha del sprite; si no cabe → izquierda; si tampoco → centrar
+  let x = sx + 16;
+  let y = sy - ph / 2;
+  if (x + pw > rect.width  - margen) x = sx - pw - 16;
+  if (x      < margen)               x = Math.max(margen, (rect.width - pw) / 2);
+  y = Math.max(margen, Math.min(y, rect.height - ph - margen));
+
+  if (window.innerWidth <= 768) {
+    pf.style.left      = (rect.left + x) + "px";
+    pf.style.top       = (rect.top  + y) + "px";
+    pf.style.transform = "none";
+  } else {
+    pf.style.left      = x + "px";
+    pf.style.top       = y + "px";
+    pf.style.transform = "none";
+  }
+}
+
 function mostrarPanel(cx, cy) {
   const pf   = document.getElementById("panelFlotante");
   const left = document.getElementById("editorLeft");
   const rect = left.getBoundingClientRect();
-  let x = cx - rect.left + 12, y = cy - rect.top + 12;
-  if (x + 155 > rect.width)  x = cx - rect.left - 160;
-  if (y + 140 > rect.height) y = cy - rect.top  - 145;
-  pf.style.left = x + "px"; pf.style.top = y + "px"; pf.style.display = "flex";
+  pf.style.display = "flex";
+  // Tamaño proporcional al visor
+  const isMobile = window.innerWidth <= 768;
+  const pw = isMobile
+    ? Math.min(155, Math.max(110, window.innerWidth * 0.35))
+    : Math.min(175, Math.max(130, rect.width * 0.22));
+  pf.style.width = pw + "px";
+  // Posicionar desde el centro 3D del sprite
+  if (spriteSeleccionado) {
+    const pos3d = spriteSeleccionado.position.clone().project(camera);
+    const sx = (pos3d.x + 1) / 2 * rect.width;
+    const sy = (-pos3d.y + 1) / 2 * rect.height;
+    _posicionarPanel(pf, rect, sx, sy);
+  } else {
+    _posicionarPanel(pf, rect, cx - rect.left, cy - rect.top);
+  }
+  // Desactivar touch-action del overlay para que el panel reciba toques
+  const ov = document.getElementById("touchOverlay");
+  if (ov) ov.style.touchAction = "auto";
 }
+
 function ocultarPanel() {
   document.getElementById("panelFlotante").style.display = "none";
+  // Restaurar touch-action del overlay
+  const ov = document.getElementById("touchOverlay");
+  if (ov) ov.style.touchAction = "none";
 }
+
 function actualizarPosPanel() {
   if (!spriteSeleccionado) return;
   const pf = document.getElementById("panelFlotante");
@@ -524,12 +622,9 @@ function actualizarPosPanel() {
   const pos3d = spriteSeleccionado.position.clone().project(camera);
   const left  = document.getElementById("editorLeft");
   const rect  = left.getBoundingClientRect();
-  const sx = (pos3d.x +  1) / 2 * rect.width;
+  const sx = (pos3d.x + 1) / 2 * rect.width;
   const sy = (-pos3d.y + 1) / 2 * rect.height;
-  let x = sx + 12, y = sy + 12;
-  if (x + 155 > rect.width)  x = sx - 160;
-  if (y + 140 > rect.height) y = sy - 145;
-  pf.style.left = x + "px"; pf.style.top = y + "px";
+  _posicionarPanel(pf, rect, sx, sy);
 }
 
 // ── Indicador ─────────────────────────────────────────────────
@@ -550,17 +645,16 @@ function finalizarModoColocar() {
 }
 
 // ── Panel flotante — acciones ─────────────────────────────────
-function activarModoMover(e) {
-  e.preventDefault();
+function activarModoMover() {
   if (!spriteSeleccionado) return;
   modoMover = true;
-  controls.enabled = false; // desactivar rotación mientras movemos
+  controls.enabled = false;
   document.getElementById("threeCanvas").style.cursor = "grabbing";
   mostrarIndicador("🖐 Arrastra sobre la prenda — suelta para fijar");
   ocultarPanel();
 }
-document.getElementById("pfBtnMover").addEventListener("mousedown",  activarModoMover);
-document.getElementById("pfBtnMover").addEventListener("touchstart", activarModoMover, { passive: false });
+// click funciona en desktop y móvil sin conflicto con touch-action
+document.getElementById("pfBtnMover").addEventListener("click", activarModoMover);
 
 document.getElementById("pfSlider").addEventListener("input", () => {
   if (!spriteSeleccionado) return;
