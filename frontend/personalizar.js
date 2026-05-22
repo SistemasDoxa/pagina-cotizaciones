@@ -113,16 +113,15 @@ function iniciarApp() {
     if (!pf.contains(e.target)) deseleccionar();
   });
 
-  // Móvil: overlay captura todos los toques
-  const overlay = document.getElementById("touchOverlay");
-  if (overlay) {
-    overlay.addEventListener("touchstart", onOverlayTouchStart, { passive: false });
-    overlay.addEventListener("touchmove",  onOverlayTouchMove,  { passive: false });
-    overlay.addEventListener("touchend",   onOverlayTouchEnd,   { passive: false });
-  }
+  // Móvil: los toques se registran directamente en el canvas.
+  // El #touchOverlay tiene pointer-events:none en CSS, así los botones de zoom
+  // y la barra de prendas reciben sus toques sin ser bloqueados por el overlay.
+  canvas.addEventListener("touchstart", onOverlayTouchStart, { passive: false });
+  canvas.addEventListener("touchmove",  onOverlayTouchMove,  { passive: false });
+  canvas.addEventListener("touchend",   onOverlayTouchEnd,   { passive: false });
 
   // Cerrar panel al tocar fuera en móvil — se registra en el panel flotante mismo
-  // para no interferir con el overlay (ver _cerrarPanelConTouch al final del archivo)
+  // para no interferir con el canvas (ver _cerrarPanelConTouch al final del archivo)
 
   (function loop() {
     requestAnimationFrame(loop);
@@ -241,15 +240,23 @@ function sincronizarUIConPrenda(prenda) {
 }
 
 function zoomCamara(dir) {
-  const factor = 1.1; // Factor de zoom (1.1 = 10% de cambio por clic)
-  
-  if (dir < 0) {
-    controls.dollyIn(factor);  // Acercar (Zoom In)
-  } else {
-    controls.dollyOut(factor); // Alejar (Zoom Out)
-  }
-  
-  // Sincroniza OrbitControls para aplicar la nueva distancia de la cámara
+  // dir < 0 → acercar (botón +), dir > 0 → alejar (botón −)
+  // factor < 1 acerca (distancia menor), factor > 1 aleja
+  const factor = dir < 0 ? 0.85 : 1.15;
+  const target = controls.target;
+  // Vector que va del target a la cámara
+  const offset = camera.position.clone().sub(target);
+  const dist   = offset.length();
+
+  // Nueva distancia respetando los límites de OrbitControls
+  const newDist = Math.min(
+    controls.maxDistance,
+    Math.max(controls.minDistance, dist * factor)
+  );
+
+  // Reposicionar la cámara en la misma dirección, nueva distancia
+  offset.normalize().multiplyScalar(newDist);
+  camera.position.copy(target).add(offset);
   controls.update();
 }
 
@@ -424,14 +431,11 @@ function onCanvasMouseUp() {
 let _touchStartX = 0, _touchStartY = 0, _touchStartTime = 0, _touchMoved = false;
 let _lastTapTime = 0, _lastTapX = 0, _lastTapY = 0;
 
-// Reenvía el evento al canvas para que OrbitControls lo reciba
+// Los listeners de touch ahora están directamente en el canvas, por lo que
+// OrbitControls ya recibe el evento original — no hace falta reenviarlo.
+// Esta función se conserva vacía para no romper las llamadas existentes.
 function _pasarTouchAOrbit(e, tipo) {
-  try {
-    document.getElementById("threeCanvas").dispatchEvent(new TouchEvent(tipo, {
-      bubbles: true, cancelable: true,
-      touches: e.touches, targetTouches: e.targetTouches, changedTouches: e.changedTouches,
-    }));
-  } catch(_) {}
+  // No-op: OrbitControls recibe el evento nativo directamente desde el canvas.
 }
 
 // Raycast rápido desde coordenadas de toque
@@ -867,8 +871,25 @@ function sincronizarUINumero() {
     : "Escribe un número — aparecerá en la prenda automáticamente";
 }
 
+// ── Auto-blur de inputs tras inactividad ───────────────────────
+let timerAutoBlur = null;
+
+function iniciarTimerBlur(inputEl) {
+  if (timerAutoBlur) clearTimeout(timerAutoBlur);
+  timerAutoBlur = setTimeout(() => {
+    if (document.activeElement === inputEl) {
+      inputEl.blur(); // Quita foco y oculta el teclado en móviles
+    }
+  }, 1000); // 2 segundos
+}
+
 document.getElementById("textoInput2").addEventListener("input", () => {
-  const texto = document.getElementById("textoInput2").value;
+  const el = document.getElementById("textoInput2");
+  
+  // Reiniciar temporizador de deselección
+  iniciarTimerBlur(el);
+
+  const texto = el.value;
   document.getElementById("charCount").textContent = texto.length;
   const est = estado();
   const tabActiva = document.querySelector(".tab[data-tab='texto']")?.classList.contains("active");
@@ -886,8 +907,16 @@ document.getElementById("textoInput2").addEventListener("input", () => {
   else colocarTextoAuto();
 });
 
+document.getElementById("textoInput2").addEventListener("focus", (e) => {
+  iniciarTimerBlur(e.target);
+});
+
 document.getElementById("numeroInput").addEventListener("input", () => {
   const el = document.getElementById("numeroInput");
+  
+  // Reiniciar temporizador de deselección
+  iniciarTimerBlur(el);
+
   el.value = el.value.replace(/\D/g, "").slice(0, 2);
   const num = el.value.trim();
   const est = estado();
@@ -904,6 +933,10 @@ document.getElementById("numeroInput").addEventListener("input", () => {
   }
   if (est.meshNumero) actualizarTexturaMesh(est.meshNumero, num, colorNumeroActual());
   else colocarNumeroAuto();
+});
+
+document.getElementById("numeroInput").addEventListener("focus", (e) => {
+  iniciarTimerBlur(e.target);
 });
 
 document.getElementById("paletteTexto").addEventListener("click", (e) => {
@@ -1232,4 +1265,3 @@ async function irASiguiente() {
 window.zoomCamara    = zoomCamara;
 window.cambiarPrenda = cambiarPrenda;
 window.irASiguiente  = irASiguiente;
-
