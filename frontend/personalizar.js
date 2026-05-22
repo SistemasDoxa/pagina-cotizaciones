@@ -880,7 +880,7 @@ function iniciarTimerBlur(inputEl) {
     if (document.activeElement === inputEl) {
       inputEl.blur(); // Quita foco y oculta el teclado en móviles
     }
-  }, 1000); // 2 segundos
+  }, 2500); // 3 segundos
 }
 
 document.getElementById("textoInput2").addEventListener("input", () => {
