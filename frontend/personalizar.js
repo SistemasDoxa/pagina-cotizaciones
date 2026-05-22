@@ -240,9 +240,17 @@ function sincronizarUIConPrenda(prenda) {
   });
 }
 
-// ── Zoom ──────────────────────────────────────────────────────
 function zoomCamara(dir) {
-  camera.position.lerp(controls.target, dir < 0 ? 0.15 : -0.15);
+  const factor = 1.1; // Factor de zoom (1.1 = 10% de cambio por clic)
+  
+  if (dir < 0) {
+    controls.dollyIn(factor);  // Acercar (Zoom In)
+  } else {
+    controls.dollyOut(factor); // Alejar (Zoom Out)
+  }
+  
+  // Sincroniza OrbitControls para aplicar la nueva distancia de la cámara
+  controls.update();
 }
 
 // ── Raycast ───────────────────────────────────────────────────
@@ -350,14 +358,17 @@ function onCanvasClick(e) {
     return;
   }
 
-  // Click simple: solo cierra el panel si hay uno abierto y se hizo clic fuera de un sprite
+  // Click simple: solo cierra el panel flotante si se hace click fuera de los sprites
   const left = document.getElementById("editorLeft");
   const rect = left.getBoundingClientRect();
   mouse2D.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
   mouse2D.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouse2D, camera);
   const hits = raycaster.intersectObjects(estado().sprites.map(s => s.mesh));
-  if (!hits.length) deseleccionar();
+  
+  if (!hits.length) {
+    deseleccionar(); // Cierra el panel flotante si hacemos click en el fondo
+  }
 }
 
 // Doble click: abre el panel flotante sobre el sprite
