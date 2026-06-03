@@ -280,6 +280,10 @@ body {
   margin: 60px auto;
 }
 
+.bottom-banner {
+  overflow: hidden;
+}
+
 /*FOOTER*/
 
 .footer {
@@ -537,7 +541,7 @@ body {
 
     .bottom-banner-cta span {
       color: #FFFFFF;
-      font-size: clamp(1.2rem, 3.5vw, 2.5rem);
+      font-size: clamp(1rem, 2.5vw, 2.5rem);
       font-weight: 800;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -546,10 +550,25 @@ body {
       border-radius: 6px;
       transition: transform 0.2s ease;
       user-select: none;
+      max-width: 45%;
+      word-break: break-word;
     }
 
     .bottom-banner-cta:hover span {
       transform: scale(1.05);
+    }
+
+    @media (max-width: 480px) {
+      .bottom-banner-cta {
+        justify-content: flex-end;
+        padding-right: 5%;
+      }
+      .bottom-banner-cta span {
+        font-size: clamp(0.75rem, 4vw, 1.1rem);
+        max-width: 55%;
+        padding: 0.3em 0.6em;
+        letter-spacing: 0.03em;
+      }
     }
 
     /* Formulario index*/
