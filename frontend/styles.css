@@ -1,6 +1,4 @@
-/* =========================
-   RESET BÁSICO
-========================= */
+/*RESET */
 * {
   margin: 0;
   padding: 0;
@@ -17,14 +15,9 @@ body {
   width: 100%;
 }
 
-/* =========================
-        NAVBAR
-   (IGUAL A LA IMAGEN)
-========================= */
+/*NAVBAR*/
 
-/* =========================
-        NAVBAR DESKTOP
-========================= */
+/*NAVBAR DESKTOP */
 .navbar {
   width: 100%;
   background: #ffffff;
@@ -37,7 +30,6 @@ body {
   z-index: 1000;
 }
 
-/* LOGO IMAGEN */
 .navbar-logo {
   height: 48px;
   width: auto;
@@ -45,7 +37,6 @@ body {
   justify-self: start;
 }
 
-/* TEXTO CENTRADO */
 .navbar .brand {
   justify-self: center;
   text-align: center;
@@ -56,7 +47,6 @@ body {
   white-space: nowrap;
 }
 
-/* MENÚ DESKTOP */
 .navbar nav {
   display: flex;
   gap: 30px;
@@ -74,7 +64,6 @@ body {
   transition: color 0.3s ease;
 }
 
-/* SUBRAYADO SUAVE */
 .navbar nav a::after {
   content: "";
   position: absolute;
@@ -89,9 +78,7 @@ body {
 .navbar nav a:hover { color: #c62828; }
 .navbar nav a:hover::after { width: 100%; }
 
-/* =========================
-     BOTÓN HAMBURGUESA
-========================= */
+/*BOTÓN HAMBURGUESA */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -116,14 +103,11 @@ body {
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-/* Animación a X cuando está abierto */
 .hamburger.abierto span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
 .hamburger.abierto span:nth-child(2) { opacity: 0; }
 .hamburger.abierto span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
 
-/* =========================
-     MENÚ MÓVIL (panel)
-========================= */
+/* Panel Movil */
 .nav-mobile {
   display: none;
   flex-direction: column;
@@ -177,9 +161,7 @@ body {
 
 .nav-mobile .mobile-sub a:hover { background: #fdecea; color: #c62828; }
 
-/* =========================
-     NAVBAR RESPONSIVE
-========================= */
+/*NAVBAR RESPONSIVE*/
 @media (max-width: 768px) {
   .navbar {
     grid-template-columns: auto 1fr auto;
@@ -196,21 +178,15 @@ body {
     font-size: 17px;
   }
 
-  /* Ocultar nav desktop en móvil */
   .navbar nav { display: none; }
 
-  /* Mostrar hamburguesa */
   .hamburger { display: flex; }
 }
-/* =========================
-        DROPDOWN CLICK
-========================= */
 
 .dropdown {
   position: relative;
 }
 
-/* oculto por defecto */
 .dropdown-content {
   display: none;
   position: absolute;
@@ -223,7 +199,6 @@ body {
   z-index: 999;
 }
 
-/* cuando esté activo */
 .dropdown-content.show {
   display: block;
 }
@@ -239,18 +214,11 @@ body {
   background: #f7f7f7;
   color: #c62828;
 }
-/* =========================
-        BANNER
-========================= */
 
 .banner-imgs img {
   width: 100%;
   display: block;
 }
-
-/* =========================
-        TÍTULO
-========================= */
 
 .section-title {
   text-align: center;
@@ -260,20 +228,18 @@ body {
   color: #111;
 }
 
-/* =========================
-        TARJETAS
-========================= */
+/*TARJETAS*/
 
 .sports {
   display: flex;
   justify-content: center;
-  gap: 50px;              /* más separación */
-  padding: 30px 80px;    /* más aire lateral */
+  gap: 50px;              
+  padding: 30px 80px;   
   flex-wrap: wrap;
 }
 
 .card {
-  width: 340px;                 /* antes ~260px */
+  width: 340px;
   background: #fff;
   border-radius: 14px;
   overflow: hidden;
@@ -286,13 +252,11 @@ body {
   box-shadow: 0 18px 40px rgba(0,0,0,0.25);
 }
 
-
 .card img {
   width: 100%;
   height: 420px;      /* antes 330px */
   object-fit: cover;
 }
-
 
 .card-text {
   text-align: center;
@@ -309,11 +273,6 @@ body {
   display: inline-block;
 }
 
-
-/* =========================
-     BANNER INFERIOR
-========================= */
-
 .bottom-banner img {
   width: 100%;
   max-width: 1200px;
@@ -321,9 +280,7 @@ body {
   margin: 60px auto;
 }
 
-/* =========================
-        FOOTER
-========================= */
+/*FOOTER*/
 
 .footer {
   background: #000;
@@ -1525,9 +1482,7 @@ model-viewer{
 }
 .btn-siguiente:hover { background: #e53935; }
 
-/* =========================
-   COTIZAR — PASOS
-========================= */
+/*COTIZAR — PASOS*/
 
 .cotizar-steps {
   display: flex;
@@ -1565,9 +1520,7 @@ model-viewer{
   background: #ddd;
 }
 
-/* =========================
-   COTIZAR — RESUMEN
-========================= */
+/*COTIZAR — RESUMEN*/
 
 .cotizar-resumen {
   display: flex;
@@ -1593,9 +1546,7 @@ model-viewer{
   font-size: 15px;
 }
 
-/* =========================
-   COTIZAR — SECCIÓN GENERAL
-========================= */
+/*COTIZAR — SECCIÓN GENERAL */
 
 .cotizar-section {
   max-width: 760px;
@@ -1616,9 +1567,7 @@ model-viewer{
   margin-bottom: 28px;
 }
 
-/* =========================
-   COTIZAR — TALLAS
-========================= */
+/*COTIZAR — TALLAS*/
 
 .tallas-grid {
   display: grid;
@@ -1702,9 +1651,7 @@ model-viewer{
 
 .tallas-total-row strong { color: #0b2a4a; font-size: 16px; }
 
-/* =========================
-   COTIZAR — CONTACTO
-========================= */
+/*COTIZAR — CONTACTO*/
 
 .contacto-form {
   display: flex;
@@ -1749,9 +1696,7 @@ model-viewer{
 .req { color: #c62828; }
 .opcional { color: #aaa; font-weight: 400; text-transform: none; font-size: 11px; }
 
-/* =========================
-   COTIZAR — ACCIONES
-========================= */
+/*COTIZAR — ACCIONES */
 
 .cotizar-actions {
   display: flex;
@@ -1787,9 +1732,7 @@ model-viewer{
 .btn-next:hover { background: #e53935; }
 .btn-next:disabled { background: #aaa; cursor: not-allowed; }
 
-/* =========================
-   COTIZAR — CONFIRMACIÓN
-========================= */
+/*COTIZAR — CONFIRMACIÓN */
 
 .listo-box {
   text-align: center;
@@ -1840,7 +1783,6 @@ model-viewer{
 
 .listo-tabla td { color: #111; }
 
-/* BTN personalizar como button */
 .btn-personalizar {
   display: inline-block;
   width: 100%;
@@ -1858,7 +1800,7 @@ model-viewer{
 }
 .btn-personalizar:hover { background: #e53935; }
 
-/* ── Estilos de personalizar.html ── */
+/*PERSONALIZAR*/
 .btn-siguiente:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1875,7 +1817,6 @@ model-viewer{
   text-align: center;
 }
 
-/* ── Indicador de prenda activa en el panel ── */
 #indicadorPrenda {
   display: flex;
   align-items: center;
@@ -1904,7 +1845,6 @@ model-viewer{
 }
 
 /*SUCURSALES*/
-    /* ── Hero ── */
     .sucursales-hero {
       background: linear-gradient(135deg, #c0392b 0%, #7b241c 100%);
       padding: 52px 20px 40px;
@@ -1923,7 +1863,6 @@ model-viewer{
       margin: 0;
     }
 
-    /* ── Cards de sucursales ── */
     .sucursales-wrap {
       max-width: 980px;
       margin: 0 auto;
@@ -1995,7 +1934,6 @@ model-viewer{
       gap: 4px;
     }
 
-    /* ── Sección mapa ── */
     .map-section {
       max-width: 980px;
       margin: 0 auto;
@@ -2026,21 +1964,16 @@ model-viewer{
       box-shadow: 0 4px 18px rgba(0,0,0,.09);
     }
 
-/* =========================
-   RESPONSIVE: PÁGINAS DE DEPORTE
-   (soccer, basquetbol, voleibol)
-========================= */
+/*RESPONSIVE: PÁGINAS DE DEPORTE*/
 
 @media (max-width: 768px) {
 
-  /* Encabezado de sección */
   .equipos-header {
     font-size: 20px;
     padding: 18px 16px;
     letter-spacing: 0.5px;
   }
 
-  /* Contenedor de cards de categoría */
   .equipos-container {
     flex-direction: column;
     align-items: center;
@@ -2049,7 +1982,6 @@ model-viewer{
     padding: 0 16px;
   }
 
-  /* Cada card de categoría (INFANTIL / DAMA / CABALLERO) */
   .equipo-card {
     width: 90%;
     max-width: 360px;
@@ -2065,19 +1997,16 @@ model-viewer{
     margin-bottom: 12px;
   }
 
-  /* Contenedor de la sección modelos */
   .modelos-container {
     padding: 20px 12px;
   }
 
-  /* Grid de modelos de prendas */
   .modelos-grid {
     flex-direction: column;
     align-items: center;
     gap: 20px;
   }
 
-  /* Cada tarjeta de modelo (Short / Playera / Conjunto) */
   .modelo-card {
     width: 90%;
     max-width: 340px;
@@ -2093,13 +2022,11 @@ model-viewer{
     font-size: 15px;
   }
 
-  /* Título dentro de la sección modelos */
   .modelos h2 {
     text-align: center;
     font-size: 20px;
   }
 
-  /* Modal cotizador */
   .modal-box {
     width: 92%;
     padding: 24px 18px;
@@ -2130,7 +2057,6 @@ model-viewer{
   }
 }
 
-/* ── Paletas de colores para texto y número ── */
 .palette-picker {
   display: flex;
   flex-wrap: wrap;
@@ -2156,25 +2082,9 @@ model-viewer{
   box-shadow: 0 0 0 2px rgba(0,0,0,0.3);
 }
 
-/* ============================================================
-   RESPONSIVE PERSONALIZAR — MÓVIL (≤ 768px)
-   REEMPLAZA el bloque anterior que empieza con el mismo comentario.
-   Layout:
-   ┌─────────────────────────────┐
-   │  Navbar (~66px)             │
-   ├─────────────────────────────┤
-   │  Visor 3D   (flex: 1)       │
-   ├─────────────────────────────┤
-   │  Tabs  COLORES|TEXTO|NUM|LOGO│ ← siempre visibles (44px)
-   ├─────────────────────────────┤
-   │  Contenido tab  (~140px)    │ ← fijo, no colapsa
-   ├─────────────────────────────┤
-   │  Barra Siguiente (52px)     │ ← fija al fondo
-   └─────────────────────────────┘
-   ============================================================ */
+/*RESPONSIVE MOVIL*/
 @media (max-width: 768px) {
 
-  /* ── Layout principal ── */
   .editor-layout {
     display: flex !important;
     flex-direction: column !important;
@@ -2183,7 +2093,6 @@ model-viewer{
     overflow: hidden;
   }
 
-  /* ── VISOR: ocupa el espacio sobrante ── */
   .editor-left {
     flex: 1 1 0;
     min-height: 0;
@@ -2199,14 +2108,13 @@ model-viewer{
     cursor: grab;
   }
 
-  /* Botones de zoom */
   .zoom-controls {
     position: absolute;
     left: 10px;
     bottom: 10px;
     flex-direction: column;
     gap: 6px;
-    z-index: 30; /* encima del overlay (z-index:25) */
+    z-index: 30;
   }
   .zoom-controls button {
     width: 36px;
@@ -2220,7 +2128,6 @@ model-viewer{
     cursor: pointer;
   }
 
-  /* Barra Playera/Short dentro del visor */
   .viewer-bottom-bar {
     position: absolute;
     bottom: 10px;
@@ -2249,36 +2156,30 @@ model-viewer{
     border-color: #111;
   }
 
-  /* Indicador modo colocar */
   #indicador {
     bottom: 56px;
     font-size: 12px;
     padding: 6px 14px;
   }
 
-  /* Indicador prenda activa — ocultar en móvil (ocupa espacio) */
   #indicadorPrenda { display: none !important; }
 
-  /* ── PANEL DERECHO: altura fija, siempre visible ── */
   .editor-right {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     background: #fff;
     border-top: 1px solid #e0e0e0;
-    /* altura fija: tabs(44) + contenido(140) + summary(52) = 236px */
     height: 236px;
     min-height: 236px;
     overflow: hidden;
     z-index: 50;
     position: relative;
-    padding-bottom: 52px; /* espacio para la barra Siguiente */
+    padding-bottom: 52px;
   }
 
-  /* Sin clase panel-abierto necesaria — siempre visible */
   .editor-right.panel-abierto { max-height: unset; }
 
-  /* ── TABS: fila de 4 botones ── */
   .panel-tabs {
     display: flex;
     flex-shrink: 0;
@@ -2309,7 +2210,7 @@ model-viewer{
     background: #fff;
   }
 
-  /* ── CONTENIDO DE TABS: scroll interno ── */
+  /*CONTENIDO DE TABS*/
   .tab-panel {
     flex: 1 1 0;
     overflow-y: auto;
@@ -2326,7 +2227,6 @@ model-viewer{
     margin: 0 0 8px;
   }
 
-  /* Input de texto/número compacto */
   .panel-content input[type=text] {
     font-size: 14px;
     padding: 7px 10px;
@@ -2337,7 +2237,6 @@ model-viewer{
     margin-bottom: 6px;
   }
 
-  /* Paleta de colores compacta */
   .paleta-colores {
     display: flex;
     flex-wrap: wrap;
@@ -2357,10 +2256,8 @@ model-viewer{
     box-shadow: 0 0 0 2px rgba(0,0,0,.25);
   }
 
-  /* Swatches texto/número compactos */
   .swatch { width: 24px; height: 24px; }
 
-  /* Label color */
   #colorTextoRow2 label,
   #colorNumeroRow label {
     font-size: 11px;
@@ -2369,16 +2266,12 @@ model-viewer{
     margin-bottom: 4px;
   }
 
-  /* Char counter pequeño */
   .char-counter { font-size: 10px; color: #aaa; }
 
-  /* Help text */
   .help-text { font-size: 10px; color: #aaa; display: block; margin-top: 4px; }
 
-  /* Upload logo */
   #logoInput2 { font-size: 12px; width: 100%; }
 
-  /* ── BARRA SIGUIENTE: fija al fondo del panel ── */
   .panel-summary {
     position: absolute !important;
     bottom: 0;
@@ -2423,7 +2316,6 @@ model-viewer{
   }
 }
 
-/* Touch overlay — solo activo en móvil */
 #touchOverlay {
   display: none;
 }
@@ -2436,13 +2328,9 @@ model-viewer{
     z-index: 25;
     background: transparent;
     touch-action: none;
-    /* FIX ZOOM: pointer-events:none para que el overlay no bloquee
-       los botones de zoom ni la barra Playera/Short.
-       Los listeners de touch ahora viven en el canvas (personalizar.js). */
     pointer-events: none;
   }
 
-  /* Botones de zoom: siempre reciben toques aunque haya capas encima */
   .zoom-controls {
     pointer-events: auto;
   }
@@ -2450,7 +2338,6 @@ model-viewer{
     pointer-events: auto;
   }
 
-  /* Barra Playera/Short: igual que zoom */
   .viewer-bottom-bar {
     pointer-events: auto;
   }

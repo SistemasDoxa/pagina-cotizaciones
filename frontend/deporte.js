@@ -22,18 +22,23 @@ cargarCatalogos();
 let conjuntoActual = "";
 let deporteActual  = "";
 
-document.querySelectorAll(".modelo-card").forEach(card => {
-  card.addEventListener("click", () => {
-    conjuntoActual = card.dataset.conjunto;
-    deporteActual  = card.dataset.deporte;
-    const nombre   = card.querySelector("h4").textContent;
-    document.getElementById("modalTitulo").textContent = `Cotizar: ${nombre}`;
-    document.getElementById("resultadoPrecio").style.display = "none";
-    document.getElementById("precioError").style.display     = "none";
-    document.getElementById("modalCotizador").style.display  = "flex";
-    // Deshabilitar "Personalizar" hasta que se consulte el precio
-    document.getElementById("btnPersonalizar").disabled = true;
-  });
+// Delegación de eventos: captura clicks en cualquier .modelo-card
+// aunque estén dentro de un acordeón que aún no existía al cargar
+document.addEventListener("click", e => {
+  const card = e.target.closest(".modelo-card");
+  if (!card) return;
+
+  conjuntoActual = card.dataset.conjunto;
+  deporteActual  = card.dataset.deporte;
+  const nombre   = card.querySelector("h4").textContent;
+  document.getElementById("modalTitulo").textContent = `Cotizar: ${nombre}`;
+  document.getElementById("precioError").style.display    = "none";
+  document.getElementById("modalCotizador").style.display = "flex";
+  // Deshabilitar "Personalizar" hasta que se elija tela y trabajo
+  document.getElementById("btnPersonalizar").disabled = true;
+  // Resetear selects para forzar nueva consulta
+  document.getElementById("selTela").value    = "";
+  document.getElementById("selTrabajo").value = "";
 });
 
 document.getElementById("btnCerrarModal").onclick = () => {
@@ -44,18 +49,19 @@ document.getElementById("modalCotizador").addEventListener("click", e => {
     document.getElementById("modalCotizador").style.display = "none";
 });
 
-// ── Consultar precio ──────────────────────────────────────────
-document.getElementById("btnConsultarPrecio").addEventListener("click", async () => {
+// ── Consultar precio automáticamente al cambiar selects ───────
+async function consultarPrecioAuto() {
   const tela    = document.getElementById("selTela").value;
   const trabajo = document.getElementById("selTrabajo").value;
 
-  if (!tela || !trabajo) {
-    alert("Selecciona el tipo de tela y el tipo de trabajo."); return;
-  }
+  const errEl = document.getElementById("precioError");
 
-  const btn = document.getElementById("btnConsultarPrecio");
-  btn.textContent = "Consultando...";
-  btn.disabled    = true;
+  // Si aún no se han seleccionado ambos valores, ocultar resultados
+  if (!tela || !trabajo) {
+    errEl.style.display = "none";
+    document.getElementById("btnPersonalizar").disabled = true;
+    return;
+  }
 
   try {
     const resultado = await getPrecio({
@@ -64,20 +70,11 @@ document.getElementById("btnConsultarPrecio").addEventListener("click", async ()
       deporte: deporteActual
     });
 
-    const errEl  = document.getElementById("precioError");
-    const resEl  = document.getElementById("resultadoPrecio");
-
     if (!resultado) {
       errEl.style.display = "block";
-      resEl.style.display = "none";
+      document.getElementById("btnPersonalizar").disabled = true;
     } else {
       errEl.style.display = "none";
-      resEl.style.display = "block";
-      document.getElementById("precioUnitario").textContent =
-        `Precio por pieza: $${resultado.precio.toFixed(2)}`;
-      document.getElementById("precioNota").textContent =
-        resultado.nota ? `* ${resultado.nota}` : "";
-      // Habilitar "Personalizar" ahora que hay un precio válido
       document.getElementById("btnPersonalizar").disabled = false;
 
       const nombreConjunto = document.getElementById("modalTitulo").textContent.replace("Cotizar: ", "");
@@ -93,12 +90,13 @@ document.getElementById("btnConsultarPrecio").addEventListener("click", async ()
     }
   } catch (err) {
     console.error(err);
-    alert("Error al consultar. Revisa tu conexión.");
-  } finally {
-    btn.textContent = "Consultar precio";
-    btn.disabled    = false;
+    errEl.style.display = "block";
+    document.getElementById("btnPersonalizar").disabled = true;
   }
-});
+}
+
+document.getElementById("selTela").addEventListener("change", consultarPrecioAuto);
+document.getElementById("selTrabajo").addEventListener("change", consultarPrecioAuto);
 
 // ── Redirigir a personalizar ──────────────────────────────────
 document.getElementById("btnPersonalizar").addEventListener("click", () => {
