@@ -8,18 +8,10 @@ const express      = require("express");
 const cors         = require("cors");
 const admin        = require("firebase-admin");
 const path         = require("path");
-const nodemailer   = require("nodemailer");
+const { Resend } = require("resend");
 
-// ── Transporter de correo (Gmail con contraseña de app) ──────
-const mailer = nodemailer.createTransport({
-  host:   process.env.MAIL_HOST || "smtp.gmail.com",
-  port:   Number(process.env.MAIL_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+// ── Cliente Resend ───────────────────────────────────────────
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ── Inicializar Firebase Admin con variables de entorno ──────
 admin.initializeApp({
@@ -246,23 +238,29 @@ app.post("/api/pedidos", async (req, res) => {
         });
       }
 
+      // ── Preparar adjuntos para Resend ───────────────────────
+      const resendAttachments = attachments.map(a => ({
+        filename: a.filename,
+        content:  a.content,
+      }));
+
       // Correo al cliente
-      await mailer.sendMail({
-        from:        `"Doxa Deportes" <${process.env.MAIL_USER}>`,
+      await resend.emails.send({
+        from:        `Doxa Deportes <sistema@cotizaciones.doxadeportes.com>`,
         to:          pedido.email,
         subject,
         html:        htmlCorreo,
-        attachments,
+        attachments: resendAttachments,
       });
 
       // Copia interna
       if (process.env.MAIL_INTERNO) {
-        await mailer.sendMail({
-          from:        `"Doxa Web" <${process.env.MAIL_USER}>`,
+        await resend.emails.send({
+          from:        `Doxa Web <sistema@cotizaciones.doxadeportes.com>`,
           to:          process.env.MAIL_INTERNO,
           subject:     subjectInterno,
           html:        `<p><strong>ID Firestore:</strong> ${ref.id}</p><p><strong>Teléfono:</strong> ${pedido.telefono}</p>` + htmlCorreo,
-          attachments,
+          attachments: resendAttachments,
         });
       }
 
