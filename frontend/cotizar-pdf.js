@@ -169,6 +169,84 @@ async function dibujarLogo(doc, logoDataUrl, afterY, pageW, margin) {
   }
 }
 
+// ── Ficha textual de colores ──────────────────────────────────
+function hexANombre(hex) {
+  if (!hex) return "Blanco";
+  var mapa = {
+    "#c0392b": "Rojo",       "#e74c3c": "Rojo claro",
+    "#2c3e50": "Azul marino","#2980b9": "Azul",      "#3498db": "Azul cielo",
+    "#27ae60": "Verde",      "#2ecc71": "Verde claro",
+    "#f39c12": "Amarillo",   "#f1c40f": "Amarillo claro",
+    "#8e44ad": "Morado",     "#9b59b6": "Morado claro",
+    "#e91e8c": "Rosa",       "#ff69b4": "Rosa claro",
+    "#ffffff": "Blanco",     "#000000": "Negro",
+    "#1a1a2e": "Negro azulado","#888888": "Gris",
+    "#bdc3c7": "Gris claro", "#e67e22": "Naranja",
+  };
+  var h = hex.toLowerCase();
+  return mapa[h] || hex.toUpperCase();
+}
+
+function dibujarFichaColores(doc, datosConj, coloresVistas, startY, pageW, margin) {
+  var y = startY + 6;
+
+  // Título de sección
+  doc.setFillColor(192, 57, 43);
+  doc.rect(margin, y, 3, 8, "F");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(192, 57, 43);
+  doc.text("COLORES DEL CONJUNTO", margin + 6, y + 6.5);
+  y += 16;
+
+  // Fondo de la ficha
+  var fichaH = 10;
+  var filas = [];
+  if (coloresVistas && coloresVistas.playera !== undefined) {
+    filas.push({ etiqueta: "Color Playera", valor: hexANombre(coloresVistas.playera) });
+  }
+  if (coloresVistas && coloresVistas.short !== undefined) {
+    filas.push({ etiqueta: "Color Short",   valor: hexANombre(coloresVistas.short) });
+  }
+  if (datosConj && datosConj.colorCalceta) {
+    filas.push({ etiqueta: "Color Calcetas", valor: datosConj.colorCalceta });
+  }
+  if (datosConj && datosConj.tela) {
+    filas.push({ etiqueta: "Tipo de tela",   valor: datosConj.tela });
+  }
+  if (datosConj && datosConj.trabajo) {
+    filas.push({ etiqueta: "Tipo de trabajo", valor: datosConj.trabajo });
+  }
+
+  var totalH = filas.length * fichaH + 6;
+  doc.setFillColor(250, 250, 250);
+  doc.setDrawColor(210, 210, 210);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y, pageW - margin * 2, totalH, 2, 2, "FD");
+
+  filas.forEach(function(fila, i) {
+    var fy = y + 5 + i * fichaH;
+    var colMitad = (pageW - margin * 2) / 2;
+
+    // Fondo alterno
+    if (i % 2 === 0) {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(margin + 0.3, fy - 3.5, pageW - margin * 2 - 0.6, fichaH, "F");
+    }
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(80, 80, 80);
+    doc.text(fila.etiqueta + ":", margin + 4, fy + 2.5);
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    doc.text(fila.valor, margin + colMitad, fy + 2.5);
+  });
+
+  return y + totalH + 4;
+}
+
 // ── Construir PDF ─────────────────────────────────────────────
 async function construirPDF() {
   var raw = sessionStorage.getItem("doxa_vistas");
@@ -196,7 +274,16 @@ async function construirPDF() {
   }
   var rawConj = sessionStorage.getItem("doxa_conjunto");
   var nombreConj = "Diseño personalizado";
-  try { if (rawConj) nombreConj = JSON.parse(rawConj).nombre || nombreConj; } catch(e) {}
+  var datosConj  = null;
+  try {
+    if (rawConj) {
+      datosConj  = JSON.parse(rawConj);
+      nombreConj = datosConj.nombre || nombreConj;
+    }
+  } catch(e) {}
+
+  // Colores de playera y short guardados al capturar vistas
+  var coloresVistas = guardado.colores || null;
 
   var logoDataUrl = sessionStorage.getItem("doxa_logo") || null;
 
@@ -223,14 +310,16 @@ async function construirPDF() {
     // Prenda única
     var vistaUnica = tienePlayera ? prendas.playera : prendas.short;
     var afterGrid  = dibujarGrid(doc, vistaUnica, null, startY, pageW, margin);
-    await dibujarLogo(doc, logoDataUrl, afterGrid, pageW, margin);
+    var afterFicha = dibujarFichaColores(doc, datosConj, coloresVistas, afterGrid, pageW, margin);
+    await dibujarLogo(doc, logoDataUrl, afterFicha, pageW, margin);
 
   } else {
     // Página 1 — Playera
     if (tienePlayera) {
       var ag1 = dibujarGrid(doc, prendas.playera, "Playera", startY, pageW, margin);
+      var af1 = dibujarFichaColores(doc, datosConj, coloresVistas, ag1, pageW, margin);
       if (logoDataUrl && espacioLib > 40) {
-        await dibujarLogo(doc, logoDataUrl, ag1, pageW, margin);
+        await dibujarLogo(doc, logoDataUrl, af1, pageW, margin);
       }
     }
     // Página 2 — Short
@@ -238,6 +327,7 @@ async function construirPDF() {
       doc.addPage();
       await dibujarEncabezado(doc, nombreConj, pageW, margin);
       var ag2 = dibujarGrid(doc, prendas.short, "Short", startY, pageW, margin);
+      dibujarFichaColores(doc, datosConj, coloresVistas, ag2, pageW, margin);
       if (logoDataUrl && !tienePlayera) {
         await dibujarLogo(doc, logoDataUrl, ag2, pageW, margin);
       }
