@@ -310,16 +310,14 @@ async function construirPDF() {
     // Prenda única
     var vistaUnica = tienePlayera ? prendas.playera : prendas.short;
     var afterGrid  = dibujarGrid(doc, vistaUnica, null, startY, pageW, margin);
-    var afterFicha = dibujarFichaColores(doc, datosConj, coloresVistas, afterGrid, pageW, margin);
-    await dibujarLogo(doc, logoDataUrl, afterFicha, pageW, margin);
+    await dibujarLogo(doc, logoDataUrl, afterGrid, pageW, margin);
 
   } else {
     // Página 1 — Playera
     if (tienePlayera) {
       var ag1 = dibujarGrid(doc, prendas.playera, "Playera", startY, pageW, margin);
-      var af1 = dibujarFichaColores(doc, datosConj, coloresVistas, ag1, pageW, margin);
       if (logoDataUrl && espacioLib > 40) {
-        await dibujarLogo(doc, logoDataUrl, af1, pageW, margin);
+        await dibujarLogo(doc, logoDataUrl, ag1, pageW, margin);
       }
     }
     // Página 2 — Short
@@ -327,12 +325,16 @@ async function construirPDF() {
       doc.addPage();
       await dibujarEncabezado(doc, nombreConj, pageW, margin);
       var ag2 = dibujarGrid(doc, prendas.short, "Short", startY, pageW, margin);
-      dibujarFichaColores(doc, datosConj, coloresVistas, ag2, pageW, margin);
       if (logoDataUrl && !tienePlayera) {
         await dibujarLogo(doc, logoDataUrl, ag2, pageW, margin);
       }
     }
   }
+
+  // Página final — Ficha de colores en hoja aparte
+  doc.addPage();
+  await dibujarEncabezado(doc, nombreConj, pageW, margin);
+  dibujarFichaColores(doc, datosConj, coloresVistas, startY, pageW, margin);
 
   // Pie en todas las páginas
   var totalPages = doc.internal.getNumberOfPages();
