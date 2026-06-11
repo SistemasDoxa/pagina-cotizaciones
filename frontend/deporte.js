@@ -39,6 +39,10 @@ document.addEventListener("click", e => {
   // Resetear selects para forzar nueva consulta
   document.getElementById("selTela").value    = "";
   document.getElementById("selTrabajo").value = "";
+  // Mostrar selector de calcetas solo en conjunto completo
+  const esConjuntoCompleto = conjuntoActual === "playera_short_calceta";
+  document.getElementById("labelColorCalceta").style.display = esConjuntoCompleto ? "" : "none";
+  document.getElementById("selColorCalceta").value = "";
 });
 
 document.getElementById("btnCerrarModal").onclick = () => {
@@ -78,14 +82,19 @@ async function consultarPrecioAuto() {
       document.getElementById("btnPersonalizar").disabled = false;
 
       const nombreConjunto = document.getElementById("modalTitulo").textContent.replace("Cotizar: ", "");
+      const selColor = document.getElementById("selColorCalceta");
+      const colorCalceta = selColor.value
+        ? selColor.options[selColor.selectedIndex].text
+        : "";
       sessionStorage.setItem("doxa_conjunto", JSON.stringify({
-        conjunto:  conjuntoActual,
-        deporte:   deporteActual,
-        nombre:    nombreConjunto,
-        precio:    resultado.precio,
-        tela:      document.getElementById("selTela").options[document.getElementById("selTela").selectedIndex].text,
-        trabajo:   document.getElementById("selTrabajo").options[document.getElementById("selTrabajo").selectedIndex].text,
-        nota:      resultado.nota || ""
+        conjunto:      conjuntoActual,
+        deporte:       deporteActual,
+        nombre:        nombreConjunto,
+        precio:        resultado.precio,
+        tela:          document.getElementById("selTela").options[document.getElementById("selTela").selectedIndex].text,
+        trabajo:       document.getElementById("selTrabajo").options[document.getElementById("selTrabajo").selectedIndex].text,
+        nota:          resultado.nota || "",
+        colorCalceta:  colorCalceta
       }));
     }
   } catch (err) {
