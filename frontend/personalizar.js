@@ -1254,7 +1254,14 @@ async function irASiguiente() {
   btn.disabled = true; btn.textContent = "Capturando vistas…";
   try {
     const vistas = await capturarTodasLasVistas();
-    sessionStorage.setItem("doxa_vistas", JSON.stringify({ tipo: conjuntoTipo, prendas: vistas }));
+    sessionStorage.setItem("doxa_vistas", JSON.stringify({
+      tipo:   conjuntoTipo,
+      prendas: vistas,
+      colores: {
+        playera: estadoPrenda.playera.colorHex || null,
+        short:   estadoPrenda.short.colorHex   || null
+      }
+    }));
   } catch(e) {
     console.error("[Doxa] Error capturando vistas:", e);
   }
