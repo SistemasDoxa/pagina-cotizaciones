@@ -187,7 +187,7 @@ function hexANombre(hex) {
   return mapa[h] || hex.toUpperCase();
 }
 
-function dibujarFichaColores(doc, datosConj, coloresVistas, startY, pageW, margin) {
+function dibujarFichaColores(doc, datosConj, coloresVistas, estampados, startY, pageW, margin) {
   var y = startY + 6;
 
   // Título de sección
@@ -216,6 +216,12 @@ function dibujarFichaColores(doc, datosConj, coloresVistas, startY, pageW, margi
   }
   if (datosConj && datosConj.trabajo) {
     filas.push({ etiqueta: "Tipo de trabajo", valor: datosConj.trabajo });
+  }
+  // Estampado por elemento
+  if (estampados) {
+    filas.push({ etiqueta: "Estampado Nombre/Texto", valor: estampados.texto  === "si" ? "Sí" : "No" });
+    filas.push({ etiqueta: "Estampado Número",       valor: estampados.numero === "si" ? "Sí" : "No" });
+    filas.push({ etiqueta: "Estampado Logo",         valor: estampados.logo   === "si" ? "Sí" : "No" });
   }
 
   var totalH = filas.length * fichaH + 6;
@@ -284,6 +290,7 @@ async function construirPDF() {
 
   // Colores de playera y short guardados al capturar vistas
   var coloresVistas = guardado.colores || null;
+  var estampados    = guardado.estampados || null;
 
   var logoDataUrl = sessionStorage.getItem("doxa_logo") || null;
 
@@ -334,7 +341,7 @@ async function construirPDF() {
   // Página final — Ficha de colores en hoja aparte
   doc.addPage();
   await dibujarEncabezado(doc, nombreConj, pageW, margin);
-  dibujarFichaColores(doc, datosConj, coloresVistas, startY, pageW, margin);
+  dibujarFichaColores(doc, datosConj, coloresVistas, estampados, startY, pageW, margin);
 
   // Pie en todas las páginas
   var totalPages = doc.internal.getNumberOfPages();

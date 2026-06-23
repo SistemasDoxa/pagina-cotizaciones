@@ -1260,6 +1260,11 @@ async function irASiguiente() {
       colores: {
         playera: estadoPrenda.playera.colorHex || null,
         short:   estadoPrenda.short.colorHex   || null
+      },
+      estampados: {
+        texto:  estampados.texto,
+        numero: estampados.numero,
+        logo:   estampados.logo
       }
     }));
   } catch(e) {
@@ -1272,3 +1277,26 @@ async function irASiguiente() {
 window.zoomCamara    = zoomCamara;
 window.cambiarPrenda = cambiarPrenda;
 window.irASiguiente  = irASiguiente;
+
+// ── Estampado (Sí / No) ───────────────────────────────────────
+const estampados = { texto: 'si', numero: 'si', logo: 'si' };
+
+function setEstampado(tipo, valor) {
+  estampados[tipo] = valor;
+  // Actualizar botones visualmente
+  const idSi = 'estampado' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + 'Si';
+  const idNo = 'estampado' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + 'No';
+  const btnSi = document.getElementById(idSi);
+  const btnNo = document.getElementById(idNo);
+  if (btnSi && btnNo) {
+    if (valor === 'si') {
+      btnSi.classList.add('activo');
+      btnNo.classList.remove('activo');
+    } else {
+      btnNo.classList.add('activo');
+      btnSi.classList.remove('activo');
+    }
+  }
+}
+
+window.setEstampado = setEstampado;
