@@ -106,6 +106,7 @@ async function consultarPrecioAuto() {
 
 document.getElementById("selTela").addEventListener("change", consultarPrecioAuto);
 document.getElementById("selTrabajo").addEventListener("change", consultarPrecioAuto);
+document.getElementById("selColorCalceta").addEventListener("change", consultarPrecioAuto);
 
 // ── Redirigir a personalizar ──────────────────────────────────
 document.getElementById("btnPersonalizar").addEventListener("click", () => {
