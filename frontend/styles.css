@@ -2386,3 +2386,86 @@ model-viewer{
   #panelFlotante label { font-size: 10px !important; }
   #panelFlotante input[type=range] { touch-action: pan-x !important; }
 }
+/* =========================
+   PÁGINAS LEGALES
+   (Política de Propiedad Intelectual / Términos y Condiciones)
+========================= */
+.legal-page-header {
+  padding: 56px 24px 10px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.legal-page-header h1 {
+  font-size: clamp(2.1rem, 6vw, 3.2rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #111;
+  margin: 0;
+}
+.legal-page-meta {
+  max-width: 900px;
+  margin: 14px auto 0;
+  padding: 0 24px;
+  color: #8c8c8b;
+  font-size: 0.85rem;
+}
+.legal-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
+.legal-content p {
+  color: #1D1D1B;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+.legal-content h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111;
+  margin: 34px 0 12px;
+}
+.legal-content ul {
+  margin: 0 0 16px 22px;
+}
+.legal-content li {
+  color: #1D1D1B;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin-bottom: 6px;
+}
+.legal-content a {
+  color: var(--azul-celeste);
+  text-decoration: none;
+}
+.legal-content a:hover {
+  text-decoration: underline;
+}
+.legal-content strong {
+  font-weight: 700;
+}
+.legal-content .legal-contacto {
+  background: #f7f7f7;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-top: 10px;
+}
+.legal-content .legal-contacto p {
+  margin-bottom: 6px;
+}
+.legal-back {
+  display: inline-block;
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--azul-celeste);
+  text-decoration: none;
+}
+.legal-back:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .legal-page-header { padding: 40px 18px 8px; }
+  .legal-page-meta, .legal-content { padding-left: 18px; padding-right: 18px; }
+}

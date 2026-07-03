@@ -27,11 +27,27 @@ const mouse2D   = new THREE.Vector2();
 // ── Conjunto actual ───────────────────────────────────────────
 let conjuntoTipo = "playera_short";
 let prendaActual = "playera";
+let deporteActual = "";
 
+// Modelos GLB por defecto
 const MODELOS = {
   playera: "img/3d/playera.glb",
   short:   "img/3d/short.glb"
 };
+
+// Modelos GLB específicos por deporte (sobrescriben el default para esa prenda)
+const MODELOS_POR_DEPORTE = {
+  basquet: {
+    playera: "img/3d/Basketball_Jersey.glb"
+  }
+};
+
+// Resuelve la ruta del GLB a usar según la prenda y el deporte actual
+function rutaModelo(prenda) {
+  const porDeporte = MODELOS_POR_DEPORTE[deporteActual];
+  if (porDeporte && porDeporte[prenda]) return porDeporte[prenda];
+  return MODELOS[prenda];
+}
 
 // ── Estado POR PRENDA ─────────────────────────────────────────
 // Cada prenda tiene su propio objeto de estado independiente.
@@ -155,7 +171,7 @@ function cargarModelo(prenda) {
 
   const loader = new THREE.GLTFLoader();
   loader.load(
-    MODELOS[prenda],
+    rutaModelo(prenda),
     (gltf) => {
       const m = gltf.scene;
       const box    = new THREE.Box3().setFromObject(m);
@@ -1038,6 +1054,7 @@ document.getElementById("logoInput2").addEventListener("change", (e) => {
     if (elNombre && datos.nombre) elNombre.textContent = datos.nombre;
     if (elPrecio && datos.precio) elPrecio.textContent = "$" + parseFloat(datos.precio).toFixed(2);
     if (datos.conjunto) conjuntoTipo = datos.conjunto;
+    if (datos.deporte)  deporteActual = datos.deporte;
     if (btnSig) btnSig.disabled = false;
   } catch(e) {
     console.warn("No hay datos de conjunto guardados.");
@@ -1078,7 +1095,7 @@ function cargarModeloEnSegundoPlano(prenda) {
   if (est.modelo) return;
   const loader = new THREE.GLTFLoader();
   loader.load(
-    MODELOS[prenda],
+    rutaModelo(prenda),
     (gltf) => {
       const m = gltf.scene;
       const box    = new THREE.Box3().setFromObject(m);
