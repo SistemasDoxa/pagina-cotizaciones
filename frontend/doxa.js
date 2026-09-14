@@ -7,16 +7,21 @@ const API = "/api";   // relativo al mismo servidor
 
 // ── Navbar: dropdown desktop + hamburguesa móvil ─────────────
 export function initNavbar() {
-  // Dropdown desktop
-  const btnDrop = document.getElementById("menuPersonalizacion");
-  const sub     = document.getElementById("submenuPersonalizacion");
-  if (btnDrop && sub) {
-    btnDrop.addEventListener("click", e => { e.preventDefault(); sub.classList.toggle("show"); });
-    document.addEventListener("click", e => {
-      if (!btnDrop.contains(e.target) && !sub.contains(e.target))
-        sub.classList.remove("show");
+  // Dropdowns desktop (Personalización, Catálogos, etc.)
+  document.querySelectorAll(".navbar nav .dropdown").forEach(drop => {
+    const btnDrop = drop.querySelector(":scope > a");
+    const sub     = drop.querySelector(":scope > .dropdown-content");
+    if (!btnDrop || !sub) return;
+    btnDrop.addEventListener("click", e => {
+      e.preventDefault();
+      const abierto = sub.classList.contains("show");
+      document.querySelectorAll(".navbar nav .dropdown-content.show").forEach(s => s.classList.remove("show"));
+      sub.classList.toggle("show", !abierto);
     });
-  }
+    document.addEventListener("click", e => {
+      if (!drop.contains(e.target)) sub.classList.remove("show");
+    });
+  });
 
   // Hamburguesa móvil
   const btnHam   = document.getElementById("btnHamburguesa");

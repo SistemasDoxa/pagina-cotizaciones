@@ -727,11 +727,19 @@ document.querySelectorAll(".color").forEach(div => {
 
 // ── Conectar UI ───────────────────────────────────────────────
 function conectarUI() {
-  const btn = document.getElementById("menuPersonalizacion");
-  const sub = document.getElementById("submenuPersonalizacion");
-  btn.addEventListener("click", e => { e.preventDefault(); sub.classList.toggle("show"); });
-  document.addEventListener("click", e => {
-    if (!btn.contains(e.target) && !sub.contains(e.target)) sub.classList.remove("show");
+  document.querySelectorAll(".navbar nav .dropdown").forEach(drop => {
+    const btn = drop.querySelector(":scope > a");
+    const sub = drop.querySelector(":scope > .dropdown-content");
+    if (!btn || !sub) return;
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      const abierto = sub.classList.contains("show");
+      document.querySelectorAll(".navbar nav .dropdown-content.show").forEach(s => s.classList.remove("show"));
+      sub.classList.toggle("show", !abierto);
+    });
+    document.addEventListener("click", e => {
+      if (!drop.contains(e.target)) sub.classList.remove("show");
+    });
   });
   document.addEventListener("mousedown", e => {
     if (!e.target.closest("#panelFlotante") && !e.target.closest("#threeCanvas")) {

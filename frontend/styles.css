@@ -210,6 +210,12 @@ body {
   display: block;
 }
 
+/* Último dropdown del menú: abrir hacia la izquierda para no salirse de pantalla */
+.navbar nav .dropdown:last-child .dropdown-content {
+  left: auto;
+  right: 0;
+}
+
 .dropdown-content a {
   display: block;
   padding: 12px 16px;
