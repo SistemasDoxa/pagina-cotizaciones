@@ -286,6 +286,11 @@ body {
 }
 
 .bottom-banner {
+  max-width: 1200px;
+  margin: 60px auto;
+}
+
+.bottom-banner {
   overflow: hidden;
 }
 
